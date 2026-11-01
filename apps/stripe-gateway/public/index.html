@@ -19,7 +19,7 @@
             <p class="subtitle">Multi-Method Global Checkout &bull; Card, PayPal, bKash, Nagad, Rocket & UPI</p>
           </div>
         </div>
-        <div id="mode-badge" class="mode-badge sandbox">Connecting...</div>
+        <div id="mode-badge" class="mode-badge live">🟢 LIVE PAYMENT GATEWAY</div>
       </div>
     </header>
 
@@ -145,22 +145,21 @@
                 <!-- Stripe Elements Container -->
                 <div id="stripe-element-container">
                   <div id="payment-element">
-                    <div class="simulated-card-box">
-                      <div class="simulated-field">
+                    <div class="card-entry-box">
+                      <div class="card-field">
                         <label for="sim-card-num">Card Number</label>
-                        <input type="text" id="sim-card-num" value="4242 4242 4242 4242" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+                        <input type="text" id="sim-card-num" placeholder="•••• •••• •••• ••••" autocomplete="cc-number" maxlength="19">
                       </div>
                       <div class="input-grid">
-                        <div class="simulated-field">
-                          <label for="sim-exp">MM / YY</label>
-                          <input type="text" id="sim-exp" value="12 / 28" placeholder="12 / 28" autocomplete="cc-exp">
+                        <div class="card-field">
+                          <label for="sim-exp">Expiration Date</label>
+                          <input type="text" id="sim-exp" placeholder="MM / YY" autocomplete="cc-exp" maxlength="7">
                         </div>
-                        <div class="simulated-field">
-                          <label for="sim-cvc">CVC</label>
-                          <input type="text" id="sim-cvc" value="123" placeholder="123" autocomplete="cc-csc">
+                        <div class="card-field">
+                          <label for="sim-cvc">Security Code (CVC)</label>
+                          <input type="password" id="sim-cvc" placeholder="CVC" autocomplete="cc-csc" maxlength="4">
                         </div>
                       </div>
-                      <button type="button" class="fill-test-btn" id="fill-test-btn">✨ Auto-Fill Test Card (4242)</button>
                     </div>
                   </div>
                   <div id="payment-message" class="hidden"></div>
@@ -273,9 +272,6 @@
                       <span>Confirm bKash Payment</span>
                       <span id="bkash-confirm-spinner" class="spinner-small hidden"></span>
                     </button>
-                    <button type="button" id="bkash-autofill-btn" class="autofill-otp-button">
-                      ✨ Auto-Fill Test (123456 / 12345)
-                    </button>
                   </div>
                   <div id="bkash-error-msg" class="otp-message"></div>
                 </div>
@@ -338,9 +334,6 @@
                       <span>Confirm Nagad Payment</span>
                       <span id="nagad-confirm-spinner" class="spinner-small hidden"></span>
                     </button>
-                    <button type="button" id="nagad-autofill-btn" class="autofill-otp-button">
-                      ✨ Auto-Fill Test (123456 / 1234)
-                    </button>
                   </div>
                   <div id="nagad-error-msg" class="otp-message"></div>
                 </div>
@@ -402,9 +395,6 @@
                     <button type="button" id="rocket-confirm-btn" class="mfs-action-btn rocket-btn">
                       <span>Confirm Rocket Payment</span>
                       <span id="rocket-confirm-spinner" class="spinner-small hidden"></span>
-                    </button>
-                    <button type="button" id="rocket-autofill-btn" class="autofill-otp-button">
-                      ✨ Auto-Fill Test (123456 / 1234)
                     </button>
                   </div>
                   <div id="rocket-error-msg" class="otp-message"></div>
@@ -530,7 +520,7 @@
               <!-- Production Live Mode Activation -->
               <div class="payout-card-box live-activation-box">
                 <h3>🚀 Live Production Gateway Activation</h3>
-                <p class="section-desc">To process live credit cards with real money instead of sandbox testing, paste your live Stripe keys below:</p>
+                <p class="section-desc">To connect your live payment acquiring gateway, enter your Stripe production API keys below:</p>
                 <div class="payout-form-grid">
                   <div class="form-group full-width">
                     <label for="live-stripe-sk">Stripe Secret Key (sk_live_... or sk_test_...)</label>

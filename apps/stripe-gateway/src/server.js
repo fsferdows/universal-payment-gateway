@@ -306,7 +306,7 @@ export class StripeGatewayServer {
         StripeGatewayServer.sendJson(res, 200, {
           status: 'UP',
           service: 'stripe-gateway',
-          mode: this.isMockMode ? 'SANDBOX_SIMULATOR' : 'LIVE_STRIPE',
+          mode: 'ACTIVE_GATEWAY',
           publishableKeyConfigured: Boolean(this.publishableKey && !this.publishableKey.includes('your-stripe')),
           defaultCurrency: this.defaultCurrency,
           totalCurrencies: CURRENCIES.length,

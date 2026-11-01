@@ -333,38 +333,46 @@ h1 {
   min-height: 80px;
 }
 
+.card-entry-box,
 .simulated-card-box {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.card-field,
 .simulated-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+.card-field label,
 .simulated-field label {
   font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
+.card-field input,
 .simulated-field input {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 10px 12px;
+  padding: 11px 13px;
   border-radius: 6px;
   font-size: 14px;
-  font-family: monospace;
+  letter-spacing: 0.5px;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.card-field input:focus,
 .simulated-field input:focus {
   border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 .fill-test-btn {

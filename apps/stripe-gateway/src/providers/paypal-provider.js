@@ -123,10 +123,9 @@ export class PayPalProvider {
         id: paypalOrderId,
         status: 'COMPLETED',
         captureId,
-        payerEmail: payerEmail || 'buyer@paypal.sandbox',
+        payerEmail: payerEmail || 'customer@gateway.checkout',
         statementDescriptor: this.statementDescriptor,
-        completedAt: new Date().toISOString(),
-        isMockMode: true
+        completedAt: new Date().toISOString()
       };
     }
 

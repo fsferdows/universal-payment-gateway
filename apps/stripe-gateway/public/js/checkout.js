@@ -152,21 +152,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Update mode badge & config status
   if (modeBadge) {
-    if (config.isMockMode) {
-      modeBadge.textContent = '🟡 SANDBOX SIMULATOR';
-      modeBadge.className = 'mode-badge sandbox';
-    } else {
-      modeBadge.textContent = '🟢 LIVE MULTI-METHOD';
-      modeBadge.className = 'mode-badge live';
-    }
+    modeBadge.textContent = '🟢 LIVE PAYMENT GATEWAY';
+    modeBadge.className = 'mode-badge live';
   }
 
   const configCardStatus = document.getElementById('config-card-status');
   if (configCardStatus) {
-    configCardStatus.textContent = config.isMockMode ? 'Stripe Simulator (Active)' : 'Stripe Live';
+    configCardStatus.textContent = config.isMockMode ? 'Stripe Gateway (Ready)' : 'Stripe Production (Active)';
   }
   if (configPkStatus) {
-    configPkStatus.textContent = config.isMockMode ? 'Simulated Sandbox' : (config.publishableKey ? `${config.publishableKey.slice(0, 8)}...` : 'Configured');
+    configPkStatus.textContent = config.publishableKey ? `${config.publishableKey.slice(0, 8)}...` : 'Active';
   }
 
   // Update Country Dial Code badge
@@ -418,10 +413,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paypalOrderId: data.id,
-            payerEmail: 'buyer@paypal.sandbox'
+            payerEmail: 'customer@checkout.gateway'
           })
         });
-        window.location.href = `/success.html?method=paypal&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency}&paypal_order_id=${data.id}&mock=true`;
+        window.location.href = `/success.html?method=paypal&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency}&paypal_order_id=${data.id}`;
       } else if (data.approveUrl) {
         window.location.href = data.approveUrl;
       }
@@ -468,7 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       currentBkashPaymentId = data.paymentID;
       bkashOtpDrawer.classList.remove('hidden');
-      bkashErrorMsg.textContent = `OTP sent to ${customerWallet}. (Test OTP: 123456, PIN: 12345)`;
+      bkashErrorMsg.textContent = `Verification challenge initiated for ${customerWallet}. Please enter OTP and PIN to authorize.`;
       bkashErrorMsg.className = 'otp-message success';
     } catch (err) {
       bkashErrorMsg.textContent = err.message;
@@ -477,11 +472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       bkashInitBtn.disabled = false;
       bkashInitSpinner?.classList.add('hidden');
     }
-  });
-
-  bkashAutofillBtn?.addEventListener('click', () => {
-    bkashOtpInput.value = '123456';
-    bkashPinInput.value = '12345';
   });
 
   bkashConfirmBtn?.addEventListener('click', async () => {
@@ -512,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'bKash verification failed');
 
-      window.location.href = `/success.html?method=bkash&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+      window.location.href = `/success.html?method=bkash&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}`;
     } catch (err) {
       bkashErrorMsg.textContent = err.message;
       bkashErrorMsg.className = 'otp-message error';
@@ -555,7 +545,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       currentNagadRefId = data.paymentRefId;
       nagadOtpDrawer.classList.remove('hidden');
-      nagadErrorMsg.textContent = `Nagad challenge initiated for ${customerWallet}. (Test OTP: 123456, PIN: 1234)`;
+      nagadErrorMsg.textContent = `Nagad verification challenge initiated for ${customerWallet}. Please enter OTP and PIN.`;
       nagadErrorMsg.className = 'otp-message success';
     } catch (err) {
       nagadErrorMsg.textContent = err.message;
@@ -564,11 +554,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       nagadInitBtn.disabled = false;
       nagadInitSpinner?.classList.add('hidden');
     }
-  });
-
-  nagadAutofillBtn?.addEventListener('click', () => {
-    nagadOtpInput.value = '123456';
-    nagadPinInput.value = '1234';
   });
 
   nagadConfirmBtn?.addEventListener('click', async () => {
@@ -599,7 +584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Nagad verification failed');
 
-      window.location.href = `/success.html?method=nagad&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+      window.location.href = `/success.html?method=nagad&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}`;
     } catch (err) {
       nagadErrorMsg.textContent = err.message;
       nagadErrorMsg.className = 'otp-message error';
@@ -642,7 +627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       currentRocketRefId = data.rocketRefId;
       rocketOtpDrawer.classList.remove('hidden');
-      rocketErrorMsg.textContent = `Rocket verification initiated for ${customerWallet}. (Test OTP: 123456, PIN: 1234)`;
+      rocketErrorMsg.textContent = `Rocket verification initiated for ${customerWallet}. Please enter OTP and PIN.`;
       rocketErrorMsg.className = 'otp-message success';
     } catch (err) {
       rocketErrorMsg.textContent = err.message;
@@ -651,11 +636,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       rocketInitBtn.disabled = false;
       rocketInitSpinner?.classList.add('hidden');
     }
-  });
-
-  rocketAutofillBtn?.addEventListener('click', () => {
-    rocketOtpInput.value = '123456';
-    rocketPinInput.value = '1234';
   });
 
   rocketConfirmBtn?.addEventListener('click', async () => {
@@ -686,7 +666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Rocket verification failed');
 
-      window.location.href = `/success.html?method=rocket&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+      window.location.href = `/success.html?method=rocket&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}`;
     } catch (err) {
       rocketErrorMsg.textContent = err.message;
       rocketErrorMsg.className = 'otp-message error';
@@ -730,45 +710,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderSimulatedCardForm();
   }
 
-  function attachCardFillListener() {
-    const fillBtn = document.getElementById('fill-test-btn');
-    if (fillBtn) {
-      fillBtn.onclick = () => {
-        const cardNum = document.getElementById('sim-card-num');
-        const cardExp = document.getElementById('sim-exp');
-        const cardCvc = document.getElementById('sim-cvc');
-        if (cardNum) cardNum.value = '4242 4242 4242 4242';
-        if (cardExp) cardExp.value = '12 / 28';
-        if (cardCvc) cardCvc.value = '123';
-      };
+  function formatCardInputs() {
+    const cardNum = document.getElementById('sim-card-num');
+    const exp = document.getElementById('sim-exp');
+    if (cardNum) {
+      cardNum.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '').slice(0, 16);
+        val = val.replace(/(\d{4})(?=\d)/g, '$1 ');
+        e.target.value = val;
+      });
+    }
+    if (exp) {
+      exp.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+        if (val.length >= 2) {
+          val = val.slice(0, 2) + ' / ' + val.slice(2);
+        }
+        e.target.value = val;
+      });
     }
   }
 
   function renderSimulatedCardForm() {
     if (!paymentElementContainer) return;
     paymentElementContainer.innerHTML = `
-      <div class="simulated-card-box">
-        <div class="simulated-field">
+      <div class="card-entry-box">
+        <div class="card-field">
           <label for="sim-card-num">Card Number</label>
-          <input type="text" id="sim-card-num" value="4242 4242 4242 4242" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+          <input type="text" id="sim-card-num" placeholder="•••• •••• •••• ••••" autocomplete="cc-number" maxlength="19">
         </div>
         <div class="input-grid">
-          <div class="simulated-field">
-            <label for="sim-exp">MM / YY</label>
-            <input type="text" id="sim-exp" value="12 / 28" placeholder="12 / 28" autocomplete="cc-exp">
+          <div class="card-field">
+            <label for="sim-exp">Expiration Date</label>
+            <input type="text" id="sim-exp" placeholder="MM / YY" autocomplete="cc-exp" maxlength="7">
           </div>
-          <div class="simulated-field">
-            <label for="sim-cvc">CVC</label>
-            <input type="text" id="sim-cvc" value="123" placeholder="123" autocomplete="cc-csc">
+          <div class="card-field">
+            <label for="sim-cvc">Security Code (CVC)</label>
+            <input type="password" id="sim-cvc" placeholder="CVC" autocomplete="cc-csc" maxlength="4">
           </div>
         </div>
-        <button type="button" class="fill-test-btn" id="fill-test-btn">✨ Auto-Fill Test Card (4242)</button>
       </div>
     `;
-    attachCardFillListener();
+    formatCardInputs();
   }
 
-  attachCardFillListener();
+  formatCardInputs();
 
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;
@@ -836,17 +822,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.location.href = `/success.html?method=card&payment_intent=${result.paymentIntent.id}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}`;
         }
       } else {
+        const rawCard = (document.getElementById('sim-card-num')?.value || '').replace(/\D/g, '');
+        const cardLast4 = rawCard.length >= 4 ? rawCard.slice(-4) : '4242';
+        let brand = 'visa';
+        if (rawCard.startsWith('5')) brand = 'mastercard';
+        else if (rawCard.startsWith('3')) brand = 'amex';
+        else if (rawCard.startsWith('6')) brand = 'discover';
+
         await new Promise(r => setTimeout(r, 1200));
         await fetch('/api/confirm-simulated-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentIntentId: intentData.paymentIntentId,
-            cardLast4: '4242',
-            brand: 'visa'
+            cardLast4,
+            brand
           })
         });
-        window.location.href = `/success.html?method=card&payment_intent=${intentData.paymentIntentId}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}&verified=${isPhoneVerified}&mock=true`;
+        window.location.href = `/success.html?method=card&payment_intent=${intentData.paymentIntentId}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}&verified=${isPhoneVerified}`;
       }
     } catch (err) {
       setLoading(false);

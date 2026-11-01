@@ -97,10 +97,7 @@ export class BkashProvider {
       originalAmount: fx.originalAmount,
       originalCurrency: fx.originalCurrency,
       exchangeRate: fx.exchangeRate,
-      status: 'Initiated',
-      testOtp: this.isMockMode ? '123456' : undefined,
-      testPin: this.isMockMode ? '12345' : undefined,
-      isMockMode: this.isMockMode
+      status: 'Initiated'
     };
   }
 
@@ -122,8 +119,7 @@ export class BkashProvider {
       customerWallet,
       status: 'Completed',
       statementDescriptor: this.statementDescriptor,
-      completedAt: new Date().toISOString(),
-      isMockMode: this.isMockMode
+      completedAt: new Date().toISOString()
     };
   }
 }
@@ -160,10 +156,7 @@ export class NagadProvider {
       originalAmount: fx.originalAmount,
       originalCurrency: fx.originalCurrency,
       exchangeRate: fx.exchangeRate,
-      status: 'Initialized',
-      testOtp: this.isMockMode ? '123456' : undefined,
-      testPin: this.isMockMode ? '12345' : undefined,
-      isMockMode: this.isMockMode
+      status: 'Initialized'
     };
   }
 
@@ -184,8 +177,7 @@ export class NagadProvider {
       customerWallet,
       status: 'Completed',
       statementDescriptor: this.statementDescriptor,
-      completedAt: new Date().toISOString(),
-      isMockMode: this.isMockMode
+      completedAt: new Date().toISOString()
     };
   }
 }
@@ -221,10 +213,7 @@ export class RocketProvider {
       originalAmount: fx.originalAmount,
       originalCurrency: fx.originalCurrency,
       exchangeRate: fx.exchangeRate,
-      status: 'Initiated',
-      testOtp: this.isMockMode ? '123456' : undefined,
-      testPin: this.isMockMode ? '1234' : undefined,
-      isMockMode: this.isMockMode
+      status: 'Initiated'
     };
   }
 
@@ -245,8 +234,7 @@ export class RocketProvider {
       customerWallet,
       status: 'Completed',
       statementDescriptor: this.statementDescriptor,
-      completedAt: new Date().toISOString(),
-      isMockMode: this.isMockMode
+      completedAt: new Date().toISOString()
     };
   }
 }
