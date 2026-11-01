@@ -31,6 +31,12 @@
 | `CHECKOUT_FRAME_ANCESTORS` | unset (any origin in development, `'self'` in production) | Merchant origins (comma or space separated, e.g. `https://shop.example.com`) allowed to embed `/checkout/:id`. The `youpi.js` modal is an iframe, so a store on a different origin than the checkout portal must be listed here or the browser blocks the modal. When unset, any site may frame the checkout page in development, while a production deployment (either `NODE_ENV=production` or `YOUPI_MODE=production`) fences the page to its own origin. Only bare `http(s)` origins are accepted — a path, query, embedded credential or wildcard is ignored, so the value cannot widen the CSP or inject another directive |
 | `YOUPI_ALLOW_PRIVATE_WEBHOOKS` | unset | Set to `true` to permit merchant webhook URLs on loopback/private networks. Required for self-hosted LAN targets; blocked by default as an SSRF guard |
 | `YOUPI_ENFORCE_OBSERVER_HEALTH` | unset (`true` in production/dev, `false` in tests) | When `false`, relaxes the requirement for a live SMS/Android observer heartbeat before creating new UPI payment sessions (useful for local development/testing) |
+| `STRIPE_GATEWAY_PORT` | `4242` | Host port for the Stripe International Card Gateway service |
+| `STRIPE_SECRET_KEY` | unset | Stripe secret API key (`sk_test_*` or `sk_live_*`) for backend payment processing |
+| `STRIPE_PUBLISHABLE_KEY` | unset | Stripe publishable API key (`pk_test_*` or `pk_live_*`) for frontend Stripe Elements |
+| `STRIPE_WEBHOOK_SECRET` | unset | Signing secret (`whsec_*`) for verifying raw Stripe webhook delivery signatures |
+| `STRIPE_CURRENCY` | `usd` | Default ISO currency code for international card transactions |
+| `STRIPE_STATEMENT_DESCRIPTOR` | `YOUPI GLOBAL` | Statement descriptor shown on customer bank/credit card statements |
 | `DEFAULT_APP_NAME` | `YOUPI PG` | Gateway application name displayed in checkout, merchant admin, and transaction notifications |
 | `DEFAULT_PRIMARY_COLOR` | `#2563eb` | Default primary brand color (hex) across customer checkout pages |
 | `DEFAULT_SUPPORT_EMAIL` | `support@youpi.local` | Default support email rendered on customer help modal and receipts |

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Cancelled — Global Card Gateway</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .cancel-card {
+      max-width: 520px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    .cancel-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.15);
+      border: 2px solid var(--error);
+      color: var(--error);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="card cancel-card">
+      <div class="cancel-icon">✕</div>
+      <h1>Payment Cancelled</h1>
+      <p class="subtitle" style="margin-bottom: 24px;">The checkout session was not completed. No charges were made to your card.</p>
+
+      <a href="/" class="pay-button" style="text-decoration: none;">
+        <span>Return to Checkout &rarr;</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

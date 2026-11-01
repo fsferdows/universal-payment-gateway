@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful — Global Card Gateway</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .success-card {
+      max-width: 580px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--success);
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 20px;
+    }
+    .receipt-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 24px 0;
+      text-align: left;
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .receipt-row.highlight {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      border-top: 1px solid var(--border-color);
+      margin-top: 10px;
+      padding-top: 14px;
+    }
+    .privacy-notice {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      text-align: left;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="card success-card">
+      <div class="success-icon">✓</div>
+      <h1>Payment Succeeded!</h1>
+      <p class="subtitle">Your transaction has been securely authorized and completed.</p>
+
+      <div class="receipt-box">
+        <div class="receipt-row">
+          <span>Order Reference:</span>
+          <code id="receipt-order">ORD-123456</code>
+        </div>
+        <div class="receipt-row">
+          <span>Payment Intent / Session:</span>
+          <code id="receipt-pi">pi_live_sample</code>
+        </div>
+        <div class="receipt-row">
+          <span>Payment Method:</span>
+          <span>Credit / Debit Card (via Stripe)</span>
+        </div>
+        <div class="receipt-row highlight">
+          <span>Amount Paid:</span>
+          <span id="receipt-amount" style="color: var(--success);">$25.00 USD</span>
+        </div>
+      </div>
+
+      <div class="privacy-notice">
+        <strong>🔒 Merchant Bank Confidentiality:</strong><br>
+        On the customer's card statement, this charge appears only as <strong>YOUPI GLOBAL</strong> (or your custom descriptor). Your personal receiving bank account and card routing are never shared with the customer.
+      </div>
+
+      <a href="/" class="pay-button" style="text-decoration: none;">
+        <span>Make Another Payment &rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id') || 'ORD-' + Date.now();
+    const pi = params.get('payment_intent') || params.get('session_id') || 'pi_verified_auth';
+    const amount = params.get('amount') || '25.00';
+    const currency = params.get('currency') || 'USD';
+
+    document.getElementById('receipt-order').textContent = orderId;
+    document.getElementById('receipt-pi').textContent = pi.length > 20 ? `${pi.slice(0, 10)}...${pi.slice(-6)}` : pi;
+    document.getElementById('receipt-amount').textContent = `${amount} ${currency}`;
+  </script>
+</body>
+</html>

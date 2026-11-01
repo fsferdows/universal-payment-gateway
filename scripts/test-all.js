@@ -59,7 +59,8 @@ const testFiles = [
   'apps/payment-api/src/__tests__/observer-poller.test.js',
   'scripts/chaos-concurrency.test.js',
   'scripts/production-infrastructure.test.js',
-  'scripts/dev-env.test.js'
+  'scripts/dev-env.test.js',
+  'apps/stripe-gateway/src/__tests__/stripe-gateway.test.js'
 ];
 
 console.log('============================================================');

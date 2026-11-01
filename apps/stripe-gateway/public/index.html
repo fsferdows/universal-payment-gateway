@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>International Multi-Currency Card Checkout — Powered by Stripe</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Stripe.js official SDK -->
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <div class="page-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-badge">⚡</div>
+          <div>
+            <h1>Global Card Gateway</h1>
+            <p class="subtitle">Multi-Currency International Payments &bull; Powered by Stripe</p>
+          </div>
+        </div>
+        <div id="mode-badge" class="mode-badge sandbox">Connecting...</div>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="grid-layout">
+        <!-- Left Column: Checkout Card -->
+        <div class="card checkout-card">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="elements">💳 Stripe Elements</button>
+            <button class="tab-btn" data-tab="hosted">🔗 Hosted Checkout</button>
+            <button class="tab-btn" data-tab="payouts">🏦 Card Payouts & Privacy</button>
+          </div>
+
+          <!-- TAB 1: Stripe Elements Form -->
+          <div id="tab-elements" class="tab-pane active">
+            <form id="payment-form">
+              <div class="form-section">
+                <label class="form-label">Select Currency & Amount</label>
+                <div class="currency-amount-row">
+                  <select id="currency-select" class="currency-dropdown">
+                    <option value="usd" selected>USD ($)</option>
+                    <option value="eur">EUR (€)</option>
+                    <option value="gbp">GBP (£)</option>
+                    <option value="cad">CAD (C$)</option>
+                    <option value="aud">AUD (A$)</option>
+                    <option value="jpy">JPY (¥)</option>
+                    <option value="sgd">SGD (S$)</option>
+                    <option value="aed">AED (AED)</option>
+                    <option value="chf">CHF (CHF)</option>
+                    <option value="inr">INR (₹)</option>
+                  </select>
+                  <div class="amount-input-wrapper">
+                    <span id="currency-symbol" class="currency-symbol">$</span>
+                    <input type="number" id="amount-input" value="25.00" min="1" step="0.01" required>
+                  </div>
+                </div>
+
+                <div class="preset-pills">
+                  <button type="button" class="preset-btn" data-val="10">$10</button>
+                  <button type="button" class="preset-btn active" data-val="25">$25</button>
+                  <button type="button" class="preset-btn" data-val="50">$50</button>
+                  <button type="button" class="preset-btn" data-val="100">$100</button>
+                  <button type="button" class="preset-btn" data-val="250">$250</button>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <label class="form-label">Customer Information</label>
+                <div class="input-grid">
+                  <input type="text" id="customer-name" placeholder="Full Name" value="Jane Doe" required>
+                  <input type="email" id="customer-email" placeholder="customer@example.com" value="jane@example.com" required>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="section-title-row">
+                  <label class="form-label">Payment Details</label>
+                  <div class="card-logos">
+                    <span class="card-icon visa">VISA</span>
+                    <span class="card-icon mc">MC</span>
+                    <span class="card-icon amex">AMEX</span>
+                    <span class="card-icon disc">DISC</span>
+                  </div>
+                </div>
+
+                <!-- Stripe Elements Container -->
+                <div id="stripe-element-container">
+                  <div id="payment-element">
+                    <!-- Stripe.js injects card input or simulated sandbox inputs here -->
+                  </div>
+                  <div id="payment-message" class="hidden"></div>
+                </div>
+              </div>
+
+              <button type="submit" id="submit-btn" class="pay-button">
+                <span id="button-spinner" class="spinner hidden"></span>
+                <span id="button-text">Pay <span id="pay-button-amount">$25.00 USD</span></span>
+              </button>
+
+              <div class="security-guarantee">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>End-to-end 256-bit SSL encrypted. Card data sent securely via Stripe.</span>
+              </div>
+            </form>
+          </div>
+
+          <!-- TAB 2: Hosted Checkout Option -->
+          <div id="tab-hosted" class="tab-pane">
+            <div class="hosted-info">
+              <h3>Stripe Hosted Checkout Redirect</h3>
+              <p>Prefer sending buyers to a Stripe-hosted URL? Click below to generate an official Checkout Session with localized multi-currency support and Apple Pay / Google Pay.</p>
+              
+              <div class="hosted-action-box">
+                <div class="amount-summary">
+                  <span class="summary-label">Amount:</span>
+                  <span id="hosted-summary-amount" class="summary-value">$25.00 USD</span>
+                </div>
+                <button type="button" id="hosted-checkout-btn" class="pay-button hosted-btn">
+                  <span>Redirect to Stripe Hosted Checkout &rarr;</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Card Payouts & Bank Privacy Guide -->
+          <div id="tab-payouts" class="tab-pane">
+            <div class="payouts-guide">
+              <div class="guide-card highlight">
+                <h3>🛡️ How Your Bank Stays 100% Confidential</h3>
+                <p>When customers pay through your Stripe integration:</p>
+                <ul>
+                  <li><strong>Customers never see your bank details:</strong> Your bank account number, IFSC/routing number, and personal card numbers are never exposed.</li>
+                  <li><strong>Statement Descriptor:</strong> The buyer’s bank or credit card statement only shows your store name (e.g. <code>YOUPI GLOBAL</code> or your business brand), keeping your private bank routing completely hidden.</li>
+                </ul>
+              </div>
+
+              <div class="guide-card">
+                <h3>💳 How to Receive Direct Card Transfers (Instant Payouts)</h3>
+                <p>To transfer customer funds directly onto your bank debit card:</p>
+                <ol>
+                  <li>Log into your <a href="https://dashboard.stripe.com/settings/payouts" target="_blank" rel="noopener">Stripe Dashboard &rarr; Settings &rarr; Payouts</a>.</li>
+                  <li>Under <strong>Bank accounts and scheduling</strong>, click <strong>Add debit card</strong>.</li>
+                  <li>Enter your Visa or Mastercard debit card number.</li>
+                  <li>Enable <strong>Instant Payouts</strong>: Stripe transfers the money directly onto your card in <strong>under 30 minutes</strong> via Visa Direct / Mastercard Send rails.</li>
+                </ol>
+              </div>
+
+              <div class="guide-card">
+                <h3>🌐 International Multi-Currency Conversion</h3>
+                <p>Customers pay in their home currency (USD, EUR, GBP, CAD, AUD, etc.), and Stripe automatically handles FX conversion and settles into your payout card or bank.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Order Summary & Keys Configuration -->
+        <div class="card summary-card">
+          <h2>Order Summary</h2>
+          <div class="summary-items">
+            <div class="summary-row">
+              <span>Item</span>
+              <span>International Top-up</span>
+            </div>
+            <div class="summary-row">
+              <span>Currency</span>
+              <span id="summary-currency" class="badge">USD</span>
+            </div>
+            <div class="summary-row">
+              <span>Order Reference</span>
+              <code id="summary-order-id">ORD-SAMPLE</code>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-row total-row">
+              <span>Total to Pay:</span>
+              <span id="summary-total" class="total-amount">$25.00</span>
+            </div>
+          </div>
+
+          <!-- Keys Configuration Helper Box -->
+          <div class="config-box">
+            <h3>⚙️ API Configuration</h3>
+            <p class="config-desc">Configured via <code>.env</code> on your backend server:</p>
+            <div class="config-fields">
+              <div class="config-field">
+                <span class="field-name">Publishable Key:</span>
+                <code id="config-pk-status">Loading...</code>
+              </div>
+              <div class="config-field">
+                <span class="field-name">Statement Descriptor:</span>
+                <code id="config-descriptor">YOUPI GLOBAL</code>
+              </div>
+            </div>
+            <div class="config-tip">
+              <strong>💡 Tip:</strong> Paste your real Stripe API keys in <code>.env</code> (<code>STRIPE_SECRET_KEY=sk_test_...</code> and <code>STRIPE_PUBLISHABLE_KEY=pk_test_...</code>) to switch instantly from sandbox simulator to live Stripe processing.
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <p>&copy; 2026 YOUPI Global &bull; Stripe Certified Integration &bull; PCI-DSS SAQ-A Compliant</p>
+    </footer>
+  </div>
+
+  <script src="/js/checkout.js"></script>
+</body>
+</html>
