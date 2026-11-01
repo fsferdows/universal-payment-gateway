@@ -853,10 +853,12 @@ See [`LICENSE`](LICENSE) for the actual license terms. A license to use the code
 
 <div align="center">
 
-### YOUPI PG
+### Universal Sovereign Payment Gateway & Banking Observer
 
-**Self-hosted payment infrastructure with direct UPI settlement.**
+**Zero-Fee Self-Hosted Global Payment Gateway with Direct Wallet Settlement.**
 
-⭐ **Contributions and feedback are welcome.**
+**Architected with ❤️ by [FS FERDOWS](https://github.com/fsferdows)**
+
+⭐ **Star this repository if you find it helpful! Contributions and feedback are welcome.**
 
 </div>
