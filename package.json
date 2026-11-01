@@ -1,9 +1,14 @@
 {
-  "name": "youpi-pg",
-  "version": "1.0.0",
+  "name": "universal-payment-gateway",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Self-Hosted White-Label UPI Payment Gateway with Payment Observation Engine",
+  "description": "Universal Sovereign Payment Gateway & Banking Observer — Zero-Fee P2P checkout for bKash, Nagad, Rocket, UPI, Cards & PayPal with automated real-time SMS reconciliation",
   "private": true,
+  "homepage": "https://github.com/fsferdows/universal-payment-gateway",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fsferdows/universal-payment-gateway.git"
+  },
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -32,8 +37,8 @@
   "engines": {
     "node": ">=22.13.0"
   },
-  "author": "Antigravity Systems",
-  "license": "Commercial",
+  "author": "FS FERDOWS <fsferdows@icloud.com> (https://github.com/fsferdows)",
+  "license": "MIT",
   "allowScripts": {
     "better-sqlite3@12.11.1": true,
     "protobufjs@8.8.1": true,

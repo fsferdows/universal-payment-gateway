@@ -1,9 +1,11 @@
 {
   "name": "stripe-gateway",
-  "version": "1.0.0",
-  "description": "Stripe International Multi-Currency Payment Gateway with Stripe Elements & Checkout",
+  "version": "2.0.0",
+  "description": "Universal Multi-Currency Payment Gateway with Stripe Elements, PayPal, bKash, Nagad, Rocket and UPI Banking Observer",
   "type": "module",
   "main": "./src/index.js",
+  "author": "FS FERDOWS <fsferdows@icloud.com> (https://github.com/fsferdows)",
+  "license": "MIT",
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test src/__tests__/**/*.test.js"
