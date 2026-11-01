@@ -15,6 +15,15 @@ import {
   validatePhoneNumber,
   formatPhoneNumber
 } from './data/currencies-and-countries.js';
+import { PayPalProvider } from './providers/paypal-provider.js';
+import {
+  BkashProvider,
+  NagadProvider,
+  RocketProvider,
+  convertToBDT,
+  validateWalletNumber,
+  BDT_EXCHANGE_RATES
+} from './providers/mfs-provider.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +77,10 @@ export {
   getCurrency,
   getCountry,
   validatePhoneNumber,
-  formatPhoneNumber
+  formatPhoneNumber,
+  convertToBDT,
+  validateWalletNumber,
+  BDT_EXCHANGE_RATES
 };
 
 export class StripeGatewayServer {
@@ -91,6 +103,12 @@ export class StripeGatewayServer {
         this.isMockMode = true;
       }
     }
+
+    // Payment Providers (PayPal, bKash, Nagad, Rocket)
+    this.paypalProvider = new PayPalProvider({ statementDescriptor: this.statementDescriptor });
+    this.bkashProvider = new BkashProvider({ statementDescriptor: this.statementDescriptor });
+    this.nagadProvider = new NagadProvider({ statementDescriptor: this.statementDescriptor });
+    this.rocketProvider = new RocketProvider({ statementDescriptor: this.statementDescriptor });
 
     this.publicDir = path.resolve(__dirname, '../public');
     this.paymentsLedger = new Map(); // In-memory tracking of created intents/sessions
@@ -211,23 +229,88 @@ export class StripeGatewayServer {
           defaultCurrency: this.defaultCurrency,
           totalCurrencies: CURRENCIES.length,
           totalCountries: COUNTRIES.length,
+          supportedMethods: ['card', 'paypal', 'bkash', 'nagad', 'rocket', 'upi'],
           timestamp: new Date().toISOString()
         });
         return;
       }
 
-      // 2. GET /api/currencies (Full ISO currencies & country dialing codes catalog)
+      // 2. GET /api/payment-methods (Returns all active methods & configuration)
+      if (pathname === '/api/payment-methods' && method === 'GET') {
+        StripeGatewayServer.sendJson(res, 200, {
+          methods: [
+            {
+              id: 'card',
+              name: 'Credit / Debit Card',
+              icon: '💳',
+              badge: 'Instant',
+              description: 'Visa, Mastercard, AMEX, Discover, JCB, UnionPay',
+              supportedCurrencies: 'ALL',
+              provider: 'Stripe Elements / 3D-Secure 2.0'
+            },
+            {
+              id: 'paypal',
+              name: 'PayPal',
+              icon: '🅿️',
+              badge: 'Global',
+              description: 'Pay via PayPal Wallet, Bank Balance or Linked Cards',
+              supportedCurrencies: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'SGD', 'CHF'],
+              provider: 'PayPal REST v2'
+            },
+            {
+              id: 'bkash',
+              name: 'bKash',
+              icon: '📱',
+              badge: 'MFS',
+              description: 'bKash Direct Wallet Payment (Instant BDT conversion)',
+              supportedCurrencies: ['BDT', 'USD', 'EUR', 'GBP'],
+              provider: 'bKash Tokenized Checkout'
+            },
+            {
+              id: 'nagad',
+              name: 'Nagad',
+              icon: '📲',
+              badge: 'MFS',
+              description: 'Bangladesh Post Office Digital Financial Service',
+              supportedCurrencies: ['BDT', 'USD', 'EUR', 'GBP'],
+              provider: 'Nagad PG Direct'
+            },
+            {
+              id: 'rocket',
+              name: 'Rocket',
+              icon: '🚀',
+              badge: 'DBBL',
+              description: 'Dutch-Bangla Bank 12-Digit Mobile Banking',
+              supportedCurrencies: ['BDT', 'USD', 'EUR', 'GBP'],
+              provider: 'DBBL Rocket MFS'
+            },
+            {
+              id: 'upi',
+              name: 'UPI / QR Code',
+              icon: '⚡',
+              badge: 'India Zero-Fee',
+              description: 'PhonePe, Google Pay, Paytm, CRED, BHIM QR',
+              supportedCurrencies: ['INR'],
+              provider: 'YOUPI Sovereign Observer Engine'
+            }
+          ]
+        });
+        return;
+      }
+
+      // 3. GET /api/currencies (Full ISO currencies & country dialing codes catalog)
       if (pathname === '/api/currencies' && method === 'GET') {
         StripeGatewayServer.sendJson(res, 200, {
           currencies: getAllCurrencies(),
           countries: getAllCountries(),
           totalCurrencies: CURRENCIES.length,
-          totalCountries: COUNTRIES.length
+          totalCountries: COUNTRIES.length,
+          fxRates: BDT_EXCHANGE_RATES
         });
         return;
       }
 
-      // 3. GET /api/config
+      // 4. GET /api/config
       if (pathname === '/api/config' && method === 'GET') {
         StripeGatewayServer.sendJson(res, 200, {
           publishableKey: this.publishableKey || 'pk_test_sample_key_for_testing',
@@ -237,12 +320,14 @@ export class StripeGatewayServer {
           supportedCurrencies: getAllCurrencies(),
           countries: getAllCountries(),
           totalCurrencies: CURRENCIES.length,
-          totalCountries: COUNTRIES.length
+          totalCountries: COUNTRIES.length,
+          fxRates: BDT_EXCHANGE_RATES,
+          methods: ['card', 'paypal', 'bkash', 'nagad', 'rocket', 'upi']
         });
         return;
       }
 
-      // 4. POST /api/verify/send-code (Customer phone number verification with country dialing code)
+      // 5. POST /api/verify/send-code (Customer phone number verification with country dialing code)
       if (pathname === '/api/verify/send-code' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -271,7 +356,7 @@ export class StripeGatewayServer {
             message: `Verification code sent to ${validation.e164}`,
             e164: validation.e164,
             formattedPhone: formatPhoneNumber(validation.dialCode, validation.nationalNumber),
-            sampleCode: code // Provided for instant sandbox testing / automated verification
+            sampleCode: code
           });
         } catch (err) {
           StripeGatewayServer.sendJson(res, 400, { error: err.message });
@@ -279,7 +364,7 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 5. POST /api/verify/check-code (Check 6-digit phone verification code)
+      // 6. POST /api/verify/check-code (Check 6-digit phone verification code)
       if (pathname === '/api/verify/check-code' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -320,7 +405,9 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 6. POST /api/create-payment-intent (for Stripe Elements inline card checkout)
+      // ========================
+      // 7. CARD PAYMENTS (Stripe)
+      // ========================
       if (pathname === '/api/create-payment-intent' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -350,6 +437,7 @@ export class StripeGatewayServer {
                 customerPhone: customerPhone || '',
                 countryCode: countryCode || '',
                 phoneVerified: phoneVerified ? 'true' : 'false',
+                method: 'card',
                 ...(body.metadata || {})
               },
               ...(customerEmail ? { receipt_email: customerEmail } : {})
@@ -357,7 +445,6 @@ export class StripeGatewayServer {
             clientSecret = paymentIntent.client_secret;
             paymentIntentId = paymentIntent.id;
           } else {
-            // Simulated Stripe Intent for sandbox testing before inserting real keys
             paymentIntentId = `pi_sim_${crypto.randomBytes(12).toString('hex')}`;
             clientSecret = `${paymentIntentId}_secret_${crypto.randomBytes(16).toString('hex')}`;
           }
@@ -365,6 +452,7 @@ export class StripeGatewayServer {
           this.paymentsLedger.set(paymentIntentId, {
             id: paymentIntentId,
             orderId,
+            method: 'card',
             amount: unitAmount,
             humanAmount: formatCurrencyAmount(unitAmount, currency),
             currency,
@@ -395,7 +483,6 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 7. POST /api/create-checkout-session (for Stripe Hosted Checkout redirect mode)
       if (pathname === '/api/create-checkout-session' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -408,7 +495,7 @@ export class StripeGatewayServer {
           const unitAmount = toSmallestUnit(rawAmount, currency);
 
           const origin = req.headers.origin || `http://${req.headers.host || 'localhost:4242'}`;
-          const successUrl = body.successUrl || `${origin}/success.html?session_id={CHECKOUT_SESSION_ID}&order_id=${encodeURIComponent(orderId)}`;
+          const successUrl = body.successUrl || `${origin}/success.html?session_id={CHECKOUT_SESSION_ID}&order_id=${encodeURIComponent(orderId)}&method=card`;
           const cancelUrl = body.cancelUrl || `${origin}/cancel.html?order_id=${encodeURIComponent(orderId)}`;
 
           let checkoutUrl;
@@ -438,15 +525,15 @@ export class StripeGatewayServer {
                 orderId,
                 customerPhone: customerPhone || '',
                 countryCode: countryCode || '',
+                method: 'card',
                 ...(body.metadata || {})
               }
             });
             checkoutUrl = session.url;
             sessionId = session.id;
           } else {
-            // Simulated Stripe Hosted Checkout Session
             sessionId = `cs_sim_${crypto.randomBytes(16).toString('hex')}`;
-            checkoutUrl = `${origin}/success.html?session_id=${sessionId}&order_id=${encodeURIComponent(orderId)}&mock=true`;
+            checkoutUrl = `${origin}/success.html?session_id=${sessionId}&order_id=${encodeURIComponent(orderId)}&method=card&mock=true`;
           }
 
           StripeGatewayServer.sendJson(res, 200, {
@@ -463,7 +550,6 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 8. POST /api/confirm-simulated-payment (for testing simulated card checkout in sandbox mode)
       if (pathname === '/api/confirm-simulated-payment' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -489,7 +575,279 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 9. POST /api/webhook (Stripe Webhook Listener with HMAC validation)
+      // ========================
+      // 8. PAYPAL PAYMENT ROUTES
+      // ========================
+      if (pathname === '/api/paypal/create-order' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { amount = 25.00, currency = 'USD', orderId = `ORD-PP-${Date.now()}` } = body;
+          const origin = req.headers.origin || `http://${req.headers.host || 'localhost:4242'}`;
+          const returnUrl = `${origin}/success.html?method=paypal&order_id=${encodeURIComponent(orderId)}`;
+          const cancelUrl = `${origin}/cancel.html?order_id=${encodeURIComponent(orderId)}`;
+
+          const order = await this.paypalProvider.createOrder({
+            amount,
+            currency,
+            orderId,
+            returnUrl,
+            cancelUrl
+          });
+
+          this.paymentsLedger.set(order.id, {
+            id: order.id,
+            orderId,
+            method: 'paypal',
+            amount,
+            currency: currency.toUpperCase(),
+            status: 'created',
+            createdAt: new Date().toISOString()
+          });
+
+          StripeGatewayServer.sendJson(res, 200, order);
+        } catch (err) {
+          console.error('[PayPal] create-order error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      if (pathname === '/api/paypal/capture-order' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { paypalOrderId, payerEmail } = body;
+          const result = await this.paypalProvider.captureOrder({ paypalOrderId, payerEmail });
+          
+          const payment = this.paymentsLedger.get(paypalOrderId);
+          if (payment) {
+            payment.status = 'succeeded';
+            payment.captureId = result.captureId;
+            payment.completedAt = result.completedAt;
+          }
+
+          StripeGatewayServer.sendJson(res, 200, {
+            ...result,
+            success: true,
+            status: 'succeeded',
+            method: 'paypal',
+            orderId: payment?.orderId
+          });
+        } catch (err) {
+          console.error('[PayPal] capture-order error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // ========================
+      // 9. bKash PAYMENT ROUTES
+      // ========================
+      if (pathname === '/api/bkash/create-payment' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { amount = 25.00, currency = 'usd', orderId = `ORD-BK-${Date.now()}`, customerWallet } = body;
+
+          const payment = await this.bkashProvider.createPayment({
+            amount,
+            currency,
+            orderId,
+            customerWallet
+          });
+
+          this.paymentsLedger.set(payment.paymentID, {
+            id: payment.paymentID,
+            orderId,
+            method: 'bkash',
+            amount: payment.amountBDT,
+            currency: 'BDT',
+            originalAmount: payment.originalAmount,
+            originalCurrency: payment.originalCurrency,
+            customerWallet: payment.customerWallet,
+            status: 'initiated',
+            createdAt: new Date().toISOString()
+          });
+
+          StripeGatewayServer.sendJson(res, 200, payment);
+        } catch (err) {
+          console.error('[bKash] create-payment error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      if (pathname === '/api/bkash/execute-payment' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { paymentID, customerWallet, otp, pin } = body;
+
+          const result = await this.bkashProvider.executePayment({
+            paymentID,
+            customerWallet,
+            otp,
+            pin
+          });
+
+          const payment = this.paymentsLedger.get(paymentID);
+          if (payment) {
+            payment.status = 'succeeded';
+            payment.trxID = result.trxID;
+            payment.completedAt = result.completedAt;
+          }
+
+          StripeGatewayServer.sendJson(res, 200, {
+            ...result,
+            success: true,
+            status: 'succeeded',
+            method: 'bkash',
+            orderId: payment?.orderId,
+            amountBDT: payment?.amount
+          });
+        } catch (err) {
+          console.error('[bKash] execute-payment error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // ========================
+      // 10. NAGAD PAYMENT ROUTES
+      // ========================
+      if (pathname === '/api/nagad/initialize' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { amount = 25.00, currency = 'usd', orderId = `ORD-NG-${Date.now()}`, customerWallet } = body;
+
+          const payment = await this.nagadProvider.initializePayment({
+            amount,
+            currency,
+            orderId,
+            customerWallet
+          });
+
+          this.paymentsLedger.set(payment.paymentRefId, {
+            id: payment.paymentRefId,
+            orderId,
+            method: 'nagad',
+            amount: payment.amountBDT,
+            currency: 'BDT',
+            customerWallet: payment.customerWallet,
+            status: 'initialized',
+            createdAt: new Date().toISOString()
+          });
+
+          StripeGatewayServer.sendJson(res, 200, payment);
+        } catch (err) {
+          console.error('[Nagad] initialize error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      if (pathname === '/api/nagad/verify-payment' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { paymentRefId, customerWallet, otp, pin } = body;
+
+          const result = await this.nagadProvider.verifyPayment({
+            paymentRefId,
+            customerWallet,
+            otp,
+            pin
+          });
+
+          const payment = this.paymentsLedger.get(paymentRefId);
+          if (payment) {
+            payment.status = 'succeeded';
+            payment.trxID = result.trxID;
+            payment.completedAt = result.completedAt;
+          }
+
+          StripeGatewayServer.sendJson(res, 200, {
+            ...result,
+            success: true,
+            status: 'succeeded',
+            method: 'nagad',
+            orderId: payment?.orderId,
+            amountBDT: payment?.amount
+          });
+        } catch (err) {
+          console.error('[Nagad] verify-payment error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // ========================
+      // 11. ROCKET PAYMENT ROUTES
+      // ========================
+      if (pathname === '/api/rocket/initiate' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { amount = 25.00, currency = 'usd', orderId = `ORD-RKT-${Date.now()}`, customerWallet } = body;
+
+          const payment = await this.rocketProvider.initiatePayment({
+            amount,
+            currency,
+            orderId,
+            customerWallet
+          });
+
+          this.paymentsLedger.set(payment.rocketRefId, {
+            id: payment.rocketRefId,
+            orderId,
+            method: 'rocket',
+            amount: payment.amountBDT,
+            currency: 'BDT',
+            customerWallet: payment.customerWallet,
+            status: 'initiated',
+            createdAt: new Date().toISOString()
+          });
+
+          StripeGatewayServer.sendJson(res, 200, payment);
+        } catch (err) {
+          console.error('[Rocket] initiate error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      if (pathname === '/api/rocket/verify' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { rocketRefId, customerWallet, otp, pin } = body;
+
+          const result = await this.rocketProvider.verifyPayment({
+            rocketRefId,
+            customerWallet,
+            otp,
+            pin
+          });
+
+          const payment = this.paymentsLedger.get(rocketRefId);
+          if (payment) {
+            payment.status = 'succeeded';
+            payment.trxID = result.trxID;
+            payment.completedAt = result.completedAt;
+          }
+
+          StripeGatewayServer.sendJson(res, 200, {
+            ...result,
+            success: true,
+            status: 'succeeded',
+            method: 'rocket',
+            orderId: payment?.orderId,
+            amountBDT: payment?.amount
+          });
+        } catch (err) {
+          console.error('[Rocket] verify error:', err);
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // ========================
+      // 12. WEBHOOK HANDLER
+      // ========================
       if (pathname === '/api/webhook' && method === 'POST') {
         const rawBody = await StripeGatewayServer.readRawBody(req);
         const sig = req.headers['stripe-signature'];
@@ -512,22 +870,22 @@ export class StripeGatewayServer {
           }
         }
 
-        console.log(`[Stripe Webhook] Received verified event: ${event.type}`);
+        console.log(`[Webhook] Received verified event: ${event.type}`);
 
         switch (event.type) {
           case 'payment_intent.succeeded': {
             const pi = event.data?.object;
-            console.log(`[Stripe Webhook] PaymentIntent succeeded: ${pi?.id} for ${pi?.amount} ${pi?.currency}`);
+            console.log(`[Webhook] PaymentIntent succeeded: ${pi?.id} for ${pi?.amount} ${pi?.currency}`);
             break;
           }
           case 'payment_intent.payment_failed': {
             const pi = event.data?.object;
-            console.warn(`[Stripe Webhook] PaymentIntent failed: ${pi?.id}: ${pi?.last_payment_error?.message}`);
+            console.warn(`[Webhook] PaymentIntent failed: ${pi?.id}: ${pi?.last_payment_error?.message}`);
             break;
           }
           case 'checkout.session.completed': {
             const session = event.data?.object;
-            console.log(`[Stripe Webhook] Checkout Session completed: ${session?.id}`);
+            console.log(`[Webhook] Checkout Session completed: ${session?.id}`);
             break;
           }
           default:
@@ -538,7 +896,9 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 10. Static Frontend Routing
+      // ========================
+      // 13. STATIC FRONTEND
+      // ========================
       if (method === 'GET') {
         let filePath = path.join(this.publicDir, pathname === '/' ? 'index.html' : pathname);
         this.serveStaticFile(res, filePath);
@@ -555,11 +915,12 @@ export class StripeGatewayServer {
     this.server = this.createServer();
     return this.server.listen(p, () => {
       console.log(`====================================================`);
-      console.log(`💳 Stripe International Gateway online at: http://localhost:${p}`);
+      console.log(`💳 Universal Gateway online at: http://localhost:${p}`);
       console.log(`• Mode:               ${this.isMockMode ? '🟡 Developer Sandbox (Simulator)' : '🟢 Live Stripe Production/Test'}`);
       console.log(`• Default Currency:   ${this.defaultCurrency.toUpperCase()}`);
       console.log(`• Currencies Loaded:  ${CURRENCIES.length} ISO currencies`);
       console.log(`• Country Codes:      ${COUNTRIES.length} verification country dialing codes`);
+      console.log(`• Payment Methods:    Card, PayPal, bKash, Nagad, Rocket, UPI`);
       console.log(`• Statement Brand:    ${this.statementDescriptor}`);
       console.log(`====================================================`);
       if (callback) callback();

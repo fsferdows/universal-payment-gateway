@@ -8,20 +8,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const summaryCurrency = document.getElementById('summary-currency');
   const summaryCountryNumber = document.getElementById('summary-country-number');
   const summaryVerification = document.getElementById('summary-verification');
+  const summaryMethodBadge = document.getElementById('summary-method-badge');
   const summaryTotal = document.getElementById('summary-total');
+  const summaryBdtTotal = document.getElementById('summary-bdt-total');
   const summaryOrderId = document.getElementById('summary-order-id');
-  const hostedSummaryAmount = document.getElementById('hosted-summary-amount');
   const modeBadge = document.getElementById('mode-badge');
   const configPkStatus = document.getElementById('config-pk-status');
-  const configDescriptor = document.getElementById('config-descriptor');
-  const configCurrencyCount = document.getElementById('config-currency-count');
-  const configCountryCount = document.getElementById('config-country-count');
   const paymentForm = document.getElementById('payment-form');
   const submitBtn = document.getElementById('submit-btn');
   const buttonSpinner = document.getElementById('button-spinner');
   const buttonText = document.getElementById('button-text');
   const paymentMessage = document.getElementById('payment-message');
-  const hostedCheckoutBtn = document.getElementById('hosted-checkout-btn');
   const presetBtns = document.querySelectorAll('.preset-btn');
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanes = document.querySelectorAll('.tab-pane');
@@ -39,8 +36,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   const autofillOtpBtn = document.getElementById('autofill-otp-btn');
   const otpMessage = document.getElementById('otp-message');
 
+  // PayPal Elements
+  const paypalSummaryAmount = document.getElementById('paypal-summary-amount');
+  const paypalPayBtn = document.getElementById('paypal-pay-btn');
+  const paypalSpinner = document.getElementById('paypal-spinner');
+  const paypalStatusMsg = document.getElementById('paypal-status-msg');
+
+  // bKash Elements
+  const bkashOrigAmt = document.getElementById('bkash-orig-amt');
+  const bkashBdtAmt = document.getElementById('bkash-bdt-amt');
+  const bkashRateNote = document.getElementById('bkash-rate-note');
+  const bkashWalletInput = document.getElementById('bkash-wallet-input');
+  const bkashInitBtn = document.getElementById('bkash-init-btn');
+  const bkashInitSpinner = document.getElementById('bkash-init-spinner');
+  const bkashOtpDrawer = document.getElementById('bkash-otp-drawer');
+  const bkashOtpInput = document.getElementById('bkash-otp-input');
+  const bkashPinInput = document.getElementById('bkash-pin-input');
+  const bkashConfirmBtn = document.getElementById('bkash-confirm-btn');
+  const bkashConfirmSpinner = document.getElementById('bkash-confirm-spinner');
+  const bkashAutofillBtn = document.getElementById('bkash-autofill-btn');
+  const bkashErrorMsg = document.getElementById('bkash-error-msg');
+  let currentBkashPaymentId = null;
+
+  // Nagad Elements
+  const nagadOrigAmt = document.getElementById('nagad-orig-amt');
+  const nagadBdtAmt = document.getElementById('nagad-bdt-amt');
+  const nagadRateNote = document.getElementById('nagad-rate-note');
+  const nagadWalletInput = document.getElementById('nagad-wallet-input');
+  const nagadInitBtn = document.getElementById('nagad-init-btn');
+  const nagadInitSpinner = document.getElementById('nagad-init-spinner');
+  const nagadOtpDrawer = document.getElementById('nagad-otp-drawer');
+  const nagadOtpInput = document.getElementById('nagad-otp-input');
+  const nagadPinInput = document.getElementById('nagad-pin-input');
+  const nagadConfirmBtn = document.getElementById('nagad-confirm-btn');
+  const nagadConfirmSpinner = document.getElementById('nagad-confirm-spinner');
+  const nagadAutofillBtn = document.getElementById('nagad-autofill-btn');
+  const nagadErrorMsg = document.getElementById('nagad-error-msg');
+  let currentNagadRefId = null;
+
+  // Rocket Elements
+  const rocketOrigAmt = document.getElementById('rocket-orig-amt');
+  const rocketBdtAmt = document.getElementById('rocket-bdt-amt');
+  const rocketRateNote = document.getElementById('rocket-rate-note');
+  const rocketWalletInput = document.getElementById('rocket-wallet-input');
+  const rocketInitBtn = document.getElementById('rocket-init-btn');
+  const rocketInitSpinner = document.getElementById('rocket-init-spinner');
+  const rocketOtpDrawer = document.getElementById('rocket-otp-drawer');
+  const rocketOtpInput = document.getElementById('rocket-otp-input');
+  const rocketPinInput = document.getElementById('rocket-pin-input');
+  const rocketConfirmBtn = document.getElementById('rocket-confirm-btn');
+  const rocketConfirmSpinner = document.getElementById('rocket-confirm-spinner');
+  const rocketAutofillBtn = document.getElementById('rocket-autofill-btn');
+  const rocketErrorMsg = document.getElementById('rocket-error-msg');
+  let currentRocketRefId = null;
+
+  // UPI Element
+  const upiSummaryAmount = document.getElementById('upi-summary-amount');
+
   const symbols = {};
   const countryMap = new Map();
+  let fxRates = { usd: 122.50, bdt: 1.00, eur: 132.00, gbp: 155.00, inr: 1.46 };
   let isPhoneVerified = false;
   let lastSampleCode = null;
 
@@ -48,10 +103,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   summaryOrderId.textContent = currentOrderId;
 
   // 1. Fetch Gateway Configuration & Catalogs
-  let config = { isMockMode: true, publishableKey: '', defaultCurrency: 'usd', supportedCurrencies: [], countries: [] };
+  let config = { isMockMode: true, publishableKey: '', defaultCurrency: 'usd', supportedCurrencies: [], countries: [], fxRates: {} };
   try {
     const res = await fetch('/api/config');
     config = await res.json();
+    if (config.fxRates) fxRates = { ...fxRates, ...config.fxRates };
   } catch (err) {
     console.error('Failed to load gateway config:', err);
   }
@@ -73,9 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currencyCounter) {
       currencyCounter.textContent = `${config.supportedCurrencies.length} Currencies Available`;
     }
-    if (configCurrencyCount) {
-      configCurrencyCount.textContent = `${config.supportedCurrencies.length} ISO Currencies`;
-    }
   }
 
   // Populate dynamic country calling codes ("country numbers")
@@ -95,10 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       countryDialSelect.appendChild(opt);
     });
-
-    if (configCountryCount) {
-      configCountryCount.textContent = `${config.countries.length} Country Calling Codes`;
-    }
   }
 
   // Update mode badge
@@ -107,12 +156,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     modeBadge.className = 'mode-badge sandbox';
     configPkStatus.textContent = 'Simulated (Add real keys in .env)';
   } else {
-    modeBadge.textContent = '🟢 Live Stripe Mode';
+    modeBadge.textContent = '🟢 Live Multi-Method Mode';
     modeBadge.className = 'mode-badge live';
     configPkStatus.textContent = config.publishableKey ? `${config.publishableKey.slice(0, 8)}...` : 'Configured';
-  }
-  if (config.statementDescriptor) {
-    configDescriptor.textContent = config.statementDescriptor;
   }
 
   // Update Country Dial Code badge
@@ -126,7 +172,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Currency & Amount updates
+  // Currency & Multi-Method Amount updates
   function updateAmounts() {
     const currency = (currencySelect.value || 'usd').toLowerCase();
     const symbol = symbols[currency] || '$';
@@ -137,7 +183,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     payButtonAmount.textContent = `${formatted} ${currency.toUpperCase()}`;
     summaryCurrency.textContent = currency.toUpperCase();
     summaryTotal.textContent = formatted;
-    hostedSummaryAmount.textContent = `${formatted} ${currency.toUpperCase()}`;
+
+    // PayPal Amount
+    if (paypalSummaryAmount) {
+      paypalSummaryAmount.textContent = `${formatted} ${currency.toUpperCase()}`;
+    }
+
+    // BDT Conversion for MFS (bKash, Nagad, Rocket)
+    const rateToBDT = fxRates[currency] || 122.50;
+    const bdtAmount = Math.round(val * rateToBDT);
+    const formattedBdt = `৳ ${bdtAmount.toLocaleString('en-US')} BDT`;
+    const rateText = `Rate: 1 ${currency.toUpperCase()} ≈ ${rateToBDT.toFixed(2)} BDT`;
+
+    if (summaryBdtTotal) summaryBdtTotal.textContent = `৳ ${bdtAmount.toLocaleString('en-US')}`;
+
+    // bKash Box
+    if (bkashOrigAmt) bkashOrigAmt.textContent = `${formatted} ${currency.toUpperCase()}`;
+    if (bkashBdtAmt) bkashBdtAmt.textContent = formattedBdt;
+    if (bkashRateNote) bkashRateNote.textContent = rateText;
+
+    // Nagad Box
+    if (nagadOrigAmt) nagadOrigAmt.textContent = `${formatted} ${currency.toUpperCase()}`;
+    if (nagadBdtAmt) nagadBdtAmt.textContent = formattedBdt;
+    if (nagadRateNote) nagadRateNote.textContent = rateText;
+
+    // Rocket Box
+    if (rocketOrigAmt) rocketOrigAmt.textContent = `${formatted} ${currency.toUpperCase()}`;
+    if (rocketBdtAmt) rocketBdtAmt.textContent = formattedBdt;
+    if (rocketRateNote) rocketRateNote.textContent = rateText;
+
+    // UPI Box (INR)
+    const rateToINR = (fxRates[currency] || 122.50) / (fxRates['inr'] || 1.46);
+    const inrAmount = (val * (currency === 'inr' ? 1 : (currency === 'usd' ? 86.50 : rateToINR))).toFixed(2);
+    if (upiSummaryAmount) upiSummaryAmount.textContent = `₹ ${inrAmount} INR`;
   }
 
   // When currency is changed, optionally select the corresponding primary country calling code
@@ -169,7 +247,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Tab switching
+  // Method Tab switching
+  const methodNames = {
+    elements: '💳 Card',
+    paypal: '🅿️ PayPal',
+    bkash: '📱 bKash',
+    nagad: '📲 Nagad',
+    rocket: '🚀 Rocket',
+    upi: '⚡ UPI (India)',
+    payouts: '🏦 Bank Privacy'
+  };
+
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.remove('active'));
@@ -177,10 +265,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.classList.add('active');
       const target = document.getElementById(`tab-${btn.dataset.tab}`);
       if (target) target.classList.add('active');
+      if (summaryMethodBadge && methodNames[btn.dataset.tab]) {
+        summaryMethodBadge.textContent = methodNames[btn.dataset.tab];
+      }
     });
   });
 
-  // 2. Phone Verification via SMS / 3D-Secure Protocol
+  // ============================================
+  // 2. Phone Verification via SMS / 3DS Protocol
+  // ============================================
   sendOtpBtn.addEventListener('click', async () => {
     const dialCode = countryDialSelect.value;
     const nationalNumber = customerPhone.value.trim();
@@ -232,7 +325,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Autofill button click
   autofillOtpBtn.addEventListener('click', () => {
     if (lastSampleCode) {
       otpInput.value = lastSampleCode;
@@ -240,7 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Check OTP Code
   verifyOtpBtn.addEventListener('click', async () => {
     const dialCode = countryDialSelect.value;
     const nationalNumber = customerPhone.value.trim();
@@ -287,10 +378,320 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 3. Setup Stripe Elements or Sandbox Mock Elements
+  // ============================================
+  // 3. PAYPAL PAYMENT INTEGRATION
+  // ============================================
+  paypalPayBtn?.addEventListener('click', async () => {
+    paypalPayBtn.disabled = true;
+    paypalSpinner?.classList.remove('hidden');
+    paypalStatusMsg?.classList.add('hidden');
+
+    const amount = parseFloat(amountInput.value);
+    const currency = currencySelect.value.toUpperCase();
+
+    try {
+      const res = await fetch('/api/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          currency,
+          orderId: currentOrderId
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to initialize PayPal');
+
+      if (data.isMockMode) {
+        // Capture simulated order
+        await new Promise(r => setTimeout(r, 1000));
+        await fetch('/api/paypal/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paypalOrderId: data.id,
+            payerEmail: 'buyer@paypal.sandbox'
+          })
+        });
+        window.location.href = `/success.html?method=paypal&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency}&paypal_order_id=${data.id}&mock=true`;
+      } else if (data.approveUrl) {
+        window.location.href = data.approveUrl;
+      }
+    } catch (err) {
+      paypalStatusMsg.textContent = err.message;
+      paypalStatusMsg.className = 'method-status-msg error';
+      paypalStatusMsg.classList.remove('hidden');
+      paypalPayBtn.disabled = false;
+      paypalSpinner?.classList.add('hidden');
+    }
+  });
+
+  // ============================================
+  // 4. bKash PAYMENT INTEGRATION
+  // ============================================
+  bkashInitBtn?.addEventListener('click', async () => {
+    const customerWallet = bkashWalletInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const currency = currencySelect.value;
+
+    if (!customerWallet || customerWallet.length !== 11) {
+      alert('Please enter a valid 11-digit bKash account number (e.g. 01711000111).');
+      bkashWalletInput.focus();
+      return;
+    }
+
+    bkashInitBtn.disabled = true;
+    bkashInitSpinner?.classList.remove('hidden');
+    bkashErrorMsg.textContent = '';
+
+    try {
+      const res = await fetch('/api/bkash/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          currency,
+          orderId: currentOrderId,
+          customerWallet
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to initiate bKash payment');
+
+      currentBkashPaymentId = data.paymentID;
+      bkashOtpDrawer.classList.remove('hidden');
+      bkashErrorMsg.textContent = `OTP sent to ${customerWallet}. (Test OTP: 123456, PIN: 12345)`;
+      bkashErrorMsg.className = 'otp-message success';
+    } catch (err) {
+      bkashErrorMsg.textContent = err.message;
+      bkashErrorMsg.className = 'otp-message error';
+    } finally {
+      bkashInitBtn.disabled = false;
+      bkashInitSpinner?.classList.add('hidden');
+    }
+  });
+
+  bkashAutofillBtn?.addEventListener('click', () => {
+    bkashOtpInput.value = '123456';
+    bkashPinInput.value = '12345';
+  });
+
+  bkashConfirmBtn?.addEventListener('click', async () => {
+    const otp = bkashOtpInput.value.trim();
+    const pin = bkashPinInput.value.trim();
+    const customerWallet = bkashWalletInput.value.trim();
+
+    if (!otp || !pin) {
+      bkashErrorMsg.textContent = 'Please enter both bKash OTP and PIN.';
+      bkashErrorMsg.className = 'otp-message error';
+      return;
+    }
+
+    bkashConfirmBtn.disabled = true;
+    bkashConfirmSpinner?.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/bkash/execute-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentID: currentBkashPaymentId,
+          customerWallet,
+          otp,
+          pin
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'bKash verification failed');
+
+      window.location.href = `/success.html?method=bkash&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+    } catch (err) {
+      bkashErrorMsg.textContent = err.message;
+      bkashErrorMsg.className = 'otp-message error';
+      bkashConfirmBtn.disabled = false;
+      bkashConfirmSpinner?.classList.add('hidden');
+    }
+  });
+
+  // ============================================
+  // 5. NAGAD PAYMENT INTEGRATION
+  // ============================================
+  nagadInitBtn?.addEventListener('click', async () => {
+    const customerWallet = nagadWalletInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const currency = currencySelect.value;
+
+    if (!customerWallet || customerWallet.length !== 11) {
+      alert('Please enter a valid 11-digit Nagad account number (e.g. 01811000222).');
+      nagadWalletInput.focus();
+      return;
+    }
+
+    nagadInitBtn.disabled = true;
+    nagadInitSpinner?.classList.remove('hidden');
+    nagadErrorMsg.textContent = '';
+
+    try {
+      const res = await fetch('/api/nagad/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          currency,
+          orderId: currentOrderId,
+          customerWallet
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to initialize Nagad');
+
+      currentNagadRefId = data.paymentRefId;
+      nagadOtpDrawer.classList.remove('hidden');
+      nagadErrorMsg.textContent = `Nagad challenge initiated for ${customerWallet}. (Test OTP: 123456, PIN: 1234)`;
+      nagadErrorMsg.className = 'otp-message success';
+    } catch (err) {
+      nagadErrorMsg.textContent = err.message;
+      nagadErrorMsg.className = 'otp-message error';
+    } finally {
+      nagadInitBtn.disabled = false;
+      nagadInitSpinner?.classList.add('hidden');
+    }
+  });
+
+  nagadAutofillBtn?.addEventListener('click', () => {
+    nagadOtpInput.value = '123456';
+    nagadPinInput.value = '1234';
+  });
+
+  nagadConfirmBtn?.addEventListener('click', async () => {
+    const otp = nagadOtpInput.value.trim();
+    const pin = nagadPinInput.value.trim();
+    const customerWallet = nagadWalletInput.value.trim();
+
+    if (!otp || !pin) {
+      nagadErrorMsg.textContent = 'Please enter both Nagad OTP and PIN.';
+      nagadErrorMsg.className = 'otp-message error';
+      return;
+    }
+
+    nagadConfirmBtn.disabled = true;
+    nagadConfirmSpinner?.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/nagad/verify-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentRefId: currentNagadRefId,
+          customerWallet,
+          otp,
+          pin
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Nagad verification failed');
+
+      window.location.href = `/success.html?method=nagad&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+    } catch (err) {
+      nagadErrorMsg.textContent = err.message;
+      nagadErrorMsg.className = 'otp-message error';
+      nagadConfirmBtn.disabled = false;
+      nagadConfirmSpinner?.classList.add('hidden');
+    }
+  });
+
+  // ============================================
+  // 6. ROCKET PAYMENT INTEGRATION
+  // ============================================
+  rocketInitBtn?.addEventListener('click', async () => {
+    const customerWallet = rocketWalletInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const currency = currencySelect.value;
+
+    if (!customerWallet || customerWallet.length !== 12) {
+      alert('Please enter a valid 12-digit Rocket account number (11 digits mobile + 1 check digit e.g. 019110003331).');
+      rocketWalletInput.focus();
+      return;
+    }
+
+    rocketInitBtn.disabled = true;
+    rocketInitSpinner?.classList.remove('hidden');
+    rocketErrorMsg.textContent = '';
+
+    try {
+      const res = await fetch('/api/rocket/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          currency,
+          orderId: currentOrderId,
+          customerWallet
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to initiate Rocket payment');
+
+      currentRocketRefId = data.rocketRefId;
+      rocketOtpDrawer.classList.remove('hidden');
+      rocketErrorMsg.textContent = `Rocket verification initiated for ${customerWallet}. (Test OTP: 123456, PIN: 1234)`;
+      rocketErrorMsg.className = 'otp-message success';
+    } catch (err) {
+      rocketErrorMsg.textContent = err.message;
+      rocketErrorMsg.className = 'otp-message error';
+    } finally {
+      rocketInitBtn.disabled = false;
+      rocketInitSpinner?.classList.add('hidden');
+    }
+  });
+
+  rocketAutofillBtn?.addEventListener('click', () => {
+    rocketOtpInput.value = '123456';
+    rocketPinInput.value = '1234';
+  });
+
+  rocketConfirmBtn?.addEventListener('click', async () => {
+    const otp = rocketOtpInput.value.trim();
+    const pin = rocketPinInput.value.trim();
+    const customerWallet = rocketWalletInput.value.trim();
+
+    if (!otp || !pin) {
+      rocketErrorMsg.textContent = 'Please enter both Rocket OTP and PIN.';
+      rocketErrorMsg.className = 'otp-message error';
+      return;
+    }
+
+    rocketConfirmBtn.disabled = true;
+    rocketConfirmSpinner?.classList.remove('hidden');
+
+    try {
+      const res = await fetch('/api/rocket/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rocketRefId: currentRocketRefId,
+          customerWallet,
+          otp,
+          pin
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Rocket verification failed');
+
+      window.location.href = `/success.html?method=rocket&order_id=${encodeURIComponent(currentOrderId)}&amount=${data.amountBDT || 3062}&currency=BDT&trx_id=${data.trxID}&wallet=${encodeURIComponent(customerWallet)}&mock=true`;
+    } catch (err) {
+      rocketErrorMsg.textContent = err.message;
+      rocketErrorMsg.className = 'otp-message error';
+      rocketConfirmBtn.disabled = false;
+      rocketConfirmSpinner?.classList.add('hidden');
+    }
+  });
+
+  // ============================================
+  // 7. CARD PAYMENTS (Stripe Elements / Simulator)
+  // ============================================
   let stripe = null;
   let cardElement = null;
-
   const paymentElementContainer = document.getElementById('payment-element');
 
   if (!config.isMockMode && window.Stripe && config.publishableKey) {
@@ -322,6 +723,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderSimulatedCardForm() {
+    if (!paymentElementContainer) return;
     paymentElementContainer.innerHTML = `
       <div class="simulated-card-box">
         <div class="simulated-field">
@@ -360,7 +762,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 4. Payment Form Submit
   paymentForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -377,7 +778,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const countryCode = selectedOpt?.dataset.country || 'US';
 
     try {
-      // Step A: Create PaymentIntent on server
       const intentRes = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -399,7 +799,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error(intentData.error || 'Failed to create payment intent');
       }
 
-      // Step B: Confirm payment
       if (stripe && cardElement && !config.isMockMode) {
         const result = await stripe.confirmCardPayment(intentData.clientSecret, {
           payment_method: {
@@ -415,11 +814,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (result.error) {
           throw new Error(result.error.message);
         } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-          window.location.href = `/success.html?payment_intent=${result.paymentIntent.id}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}`;
+          window.location.href = `/success.html?method=card&payment_intent=${result.paymentIntent.id}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}`;
         }
       } else {
-        // Simulated sandbox confirmation
-        await new Promise(r => setTimeout(r, 1200)); // Simulate bank authorization
+        await new Promise(r => setTimeout(r, 1200));
         await fetch('/api/confirm-simulated-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -429,46 +827,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             brand: 'visa'
           })
         });
-        window.location.href = `/success.html?payment_intent=${intentData.paymentIntentId}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}&verified=${isPhoneVerified}&mock=true`;
+        window.location.href = `/success.html?method=card&payment_intent=${intentData.paymentIntentId}&order_id=${encodeURIComponent(currentOrderId)}&amount=${amount}&currency=${currency.toUpperCase()}&phone=${encodeURIComponent(fullPhone)}&verified=${isPhoneVerified}&mock=true`;
       }
     } catch (err) {
       setLoading(false);
       paymentMessage.textContent = err.message || 'Payment processing failed';
       paymentMessage.className = 'payment-error-box';
       paymentMessage.classList.remove('hidden');
-    }
-  });
-
-  // 5. Hosted Checkout Button Click
-  hostedCheckoutBtn.addEventListener('click', async () => {
-    hostedCheckoutBtn.disabled = true;
-    const amount = parseFloat(amountInput.value);
-    const currency = currencySelect.value;
-    const dialCode = countryDialSelect.value;
-    const phoneNum = customerPhone.value.trim();
-    const fullPhone = phoneNum ? `${dialCode}${phoneNum}` : '';
-    const selectedOpt = countryDialSelect.options[countryDialSelect.selectedIndex];
-    const countryCode = selectedOpt?.dataset.country || 'US';
-
-    try {
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          currency,
-          orderId: currentOrderId,
-          productName: `International Payment (${currentOrderId})`,
-          customerPhone: fullPhone,
-          countryCode
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to initialize Checkout Session');
-      window.location.href = data.checkoutUrl;
-    } catch (err) {
-      alert(`Checkout Error: ${err.message}`);
-      hostedCheckoutBtn.disabled = false;
     }
   });
 

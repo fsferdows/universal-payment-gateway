@@ -122,3 +122,30 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 Never commit production `.env` files to source code repositories.
+
+---
+
+## 3. Universal Payment Gateway Configuration (Card, PayPal, bKash, Nagad, Rocket)
+
+YOUPI PG V2 includes a unified multi-method gateway portal on port `4242`:
+
+| Environment Variable | Default | Purpose |
+|----------------------|---------|---------|
+| `STRIPE_GATEWAY_PORT` | `4242` | Gateway portal port |
+| `STRIPE_SECRET_KEY` | (sandbox) | Stripe Secret Key (`sk_live_...` or `sk_test_...`) |
+| `STRIPE_PUBLISHABLE_KEY` | (sandbox) | Stripe Publishable Key (`pk_live_...` or `pk_test_...`) |
+| `STRIPE_WEBHOOK_SECRET` | (sandbox) | Stripe Webhook signing secret (`whsec_...`) |
+| `STRIPE_STATEMENT_DESCRIPTOR` | `YOUPI GLOBAL` | Statement descriptor protecting merchant confidentiality |
+| `PAYPAL_CLIENT_ID` | (sandbox) | PayPal REST API client ID |
+| `PAYPAL_CLIENT_SECRET` | (sandbox) | PayPal REST API client secret |
+| `PAYPAL_MODE` | `sandbox` | PayPal mode: `sandbox` or `live` |
+| `BKASH_APP_KEY` | (sandbox) | bKash tokenized checkout App Key |
+| `BKASH_APP_SECRET` | (sandbox) | bKash tokenized checkout App Secret |
+| `BKASH_USERNAME` | (sandbox) | bKash merchant username |
+| `BKASH_PASSWORD` | (sandbox) | bKash merchant password |
+| `NAGAD_MERCHANT_ID` | (sandbox) | Nagad merchant identifier |
+| `NAGAD_PUBLIC_KEY` | (sandbox) | Nagad PG public certificate |
+| `NAGAD_PRIVATE_KEY` | (sandbox) | Merchant PG private key |
+| `ROCKET_MERCHANT_ID` | (sandbox) | DBBL Rocket merchant identifier |
+| `ROCKET_SECRET_KEY` | (sandbox) | DBBL Rocket API secret key |
+

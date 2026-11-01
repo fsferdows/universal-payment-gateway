@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>International Multi-Currency Card Checkout — Powered by Stripe</title>
+  <title>Universal Payment Gateway — Card, PayPal, bKash, Nagad, Rocket, UPI</title>
   <link rel="stylesheet" href="/css/style.css">
   <!-- Stripe.js official SDK -->
   <script src="https://js.stripe.com/v3/"></script>
@@ -15,8 +15,8 @@
         <div class="brand">
           <div class="brand-badge">⚡</div>
           <div>
-            <h1>Global Card Gateway</h1>
-            <p class="subtitle">Multi-Currency International Payments &bull; Powered by Stripe</p>
+            <h1>Universal Payment Gateway</h1>
+            <p class="subtitle">Multi-Method Global Checkout &bull; Card, PayPal, bKash, Nagad, Rocket & UPI</p>
           </div>
         </div>
         <div id="mode-badge" class="mode-badge sandbox">Connecting...</div>
@@ -27,50 +27,56 @@
       <div class="grid-layout">
         <!-- Left Column: Checkout Card -->
         <div class="card checkout-card">
+          <!-- Universal Payment Method Tabs -->
           <div class="tabs">
-            <button class="tab-btn active" data-tab="elements">💳 Stripe Elements</button>
-            <button class="tab-btn" data-tab="hosted">🔗 Hosted Checkout</button>
-            <button class="tab-btn" data-tab="payouts">🏦 Card Payouts & Privacy</button>
+            <button class="tab-btn active" data-tab="elements">💳 Card</button>
+            <button class="tab-btn" data-tab="paypal">🅿️ PayPal</button>
+            <button class="tab-btn bkash-tab-btn" data-tab="bkash">📱 bKash</button>
+            <button class="tab-btn nagad-tab-btn" data-tab="nagad">📲 Nagad</button>
+            <button class="tab-btn rocket-tab-btn" data-tab="rocket">🚀 Rocket</button>
+            <button class="tab-btn upi-tab-btn" data-tab="upi">⚡ UPI</button>
+            <button class="tab-btn" data-tab="payouts">🏦 Bank Privacy</button>
           </div>
 
-          <!-- TAB 1: Stripe Elements Form -->
+          <!-- Common Amount & Currency Selector (Syncs across all methods) -->
+          <div class="common-amount-bar">
+            <div class="section-title-row">
+              <label class="form-label" for="currency-select">Order Amount & Global Currency</label>
+              <span class="currency-counter" id="currency-counter">136 Currencies Available</span>
+            </div>
+            <div class="currency-amount-row">
+              <div class="currency-select-wrapper">
+                <select id="currency-select" class="currency-dropdown" aria-label="Payment Currency">
+                  <option value="usd" selected>🇺🇸 USD ($) — US Dollar</option>
+                  <option value="eur">🇪🇺 EUR (€) — Euro</option>
+                  <option value="gbp">🇬🇧 GBP (£) — British Pound</option>
+                  <option value="cad">🇨🇦 CAD (CA$) — Canadian Dollar</option>
+                  <option value="bdt">🇧🇩 BDT (৳) — Bangladeshi Taka</option>
+                  <option value="inr">🇮🇳 INR (₹) — Indian Rupee</option>
+                  <option value="aud">🇦🇺 AUD (A$) — Australian Dollar</option>
+                  <option value="jpy">🇯🇵 JPY (¥) — Japanese Yen</option>
+                  <option value="sgd">🇸🇬 SGD (S$) — Singapore Dollar</option>
+                  <option value="aed">🇦🇪 AED (AED) — UAE Dirham</option>
+                </select>
+              </div>
+              <div class="amount-input-wrapper">
+                <span id="currency-symbol" class="currency-symbol">$</span>
+                <input type="number" id="amount-input" value="25.00" min="1" step="0.01" required>
+              </div>
+            </div>
+
+            <div class="preset-pills">
+              <button type="button" class="preset-btn" data-val="10">$10</button>
+              <button type="button" class="preset-btn active" data-val="25">$25</button>
+              <button type="button" class="preset-btn" data-val="50">$50</button>
+              <button type="button" class="preset-btn" data-val="100">$100</button>
+              <button type="button" class="preset-btn" data-val="250">$250</button>
+            </div>
+          </div>
+
+          <!-- TAB 1: Stripe Elements Card Form -->
           <div id="tab-elements" class="tab-pane active">
             <form id="payment-form">
-              <div class="form-section">
-                <div class="section-title-row">
-                  <label class="form-label" for="currency-select">Select Currency & Amount</label>
-                  <span class="currency-counter" id="currency-counter">Loading currencies...</span>
-                </div>
-                <div class="currency-amount-row">
-                  <div class="currency-select-wrapper">
-                    <select id="currency-select" class="currency-dropdown" aria-label="Payment Currency">
-                      <option value="usd" selected>🇺🇸 USD ($) — US Dollar</option>
-                      <option value="eur">🇪🇺 EUR (€) — Euro</option>
-                      <option value="gbp">🇬🇧 GBP (£) — British Pound</option>
-                      <option value="cad">🇨🇦 CAD (CA$) — Canadian Dollar</option>
-                      <option value="aud">🇦🇺 AUD (A$) — Australian Dollar</option>
-                      <option value="jpy">🇯🇵 JPY (¥) — Japanese Yen</option>
-                      <option value="inr">🇮🇳 INR (₹) — Indian Rupee</option>
-                      <option value="chf">🇨🇭 CHF (CHF) — Swiss Franc</option>
-                      <option value="sgd">🇸🇬 SGD (S$) — Singapore Dollar</option>
-                      <option value="aed">🇦🇪 AED (AED) — UAE Dirham</option>
-                    </select>
-                  </div>
-                  <div class="amount-input-wrapper">
-                    <span id="currency-symbol" class="currency-symbol">$</span>
-                    <input type="number" id="amount-input" value="25.00" min="1" step="0.01" required>
-                  </div>
-                </div>
-
-                <div class="preset-pills">
-                  <button type="button" class="preset-btn" data-val="10">$10</button>
-                  <button type="button" class="preset-btn active" data-val="25">$25</button>
-                  <button type="button" class="preset-btn" data-val="50">$50</button>
-                  <button type="button" class="preset-btn" data-val="100">$100</button>
-                  <button type="button" class="preset-btn" data-val="250">$250</button>
-                </div>
-              </div>
-
               <!-- Customer Info -->
               <div class="form-section">
                 <label class="form-label">Customer Information</label>
@@ -83,7 +89,7 @@
               <!-- Phone & Country Number Verification (SMS / 3DS) -->
               <div class="form-section phone-verification-section">
                 <div class="section-title-row">
-                  <label class="form-label" for="customer-phone">Phone Verification (Country Calling Number)</label>
+                  <label class="form-label" for="customer-phone">International Phone Verification</label>
                   <span id="phone-verification-status-badge" class="verify-badge unverified">
                     <span class="badge-dot"></span> Unverified
                   </span>
@@ -94,17 +100,12 @@
                     <select id="country-dial-select" class="dial-code-dropdown" aria-label="Country Calling Code">
                       <option value="+1" data-country="US" selected>🇺🇸 United States (+1)</option>
                       <option value="+44" data-country="GB">🇬🇧 United Kingdom (+44)</option>
-                      <option value="+1" data-country="CA">🇨🇦 Canada (+1)</option>
-                      <option value="+61" data-country="AU">🇦🇺 Australia (+61)</option>
-                      <option value="+49" data-country="DE">🇩🇪 Germany (+49)</option>
-                      <option value="+33" data-country="FR">🇫🇷 France (+33)</option>
-                      <option value="+91" data-country="IN">🇮🇳 India (+91)</option>
-                      <option value="+81" data-country="JP">🇯🇵 Japan (+81)</option>
-                      <option value="+82" data-country="KR">🇰🇷 South Korea (+82)</option>
-                      <option value="+971" data-country="AE">🇦🇪 UAE (+971)</option>
                       <option value="+880" data-country="BD">🇧🇩 Bangladesh (+880)</option>
+                      <option value="+91" data-country="IN">🇮🇳 India (+91)</option>
+                      <option value="+1" data-country="CA">🇨🇦 Canada (+1)</option>
+                      <option value="+49" data-country="DE">🇩🇪 Germany (+49)</option>
+                      <option value="+971" data-country="AE">🇦🇪 UAE (+971)</option>
                       <option value="+92" data-country="PK">🇵🇰 Pakistan (+92)</option>
-                      <option value="+55" data-country="BR">🇧🇷 Brazil (+55)</option>
                     </select>
                   </div>
                   <div class="phone-number-wrapper">
@@ -132,7 +133,7 @@
 
               <div class="form-section">
                 <div class="section-title-row">
-                  <label class="form-label">Payment Details</label>
+                  <label class="form-label">Card Payment Details</label>
                   <div class="card-logos">
                     <span class="card-icon visa">VISA</span>
                     <span class="card-icon mc">MC</span>
@@ -143,9 +144,7 @@
 
                 <!-- Stripe Elements Container -->
                 <div id="stripe-element-container">
-                  <div id="payment-element">
-                    <!-- Stripe.js injects card input or simulated sandbox inputs here -->
-                  </div>
+                  <div id="payment-element"></div>
                   <div id="payment-message" class="hidden"></div>
                 </div>
               </div>
@@ -160,38 +159,283 @@
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <span>End-to-end 256-bit SSL encrypted. Card data sent securely via Stripe.</span>
+                <span>End-to-end 256-bit SSL encrypted. Card data processed securely via Stripe.</span>
               </div>
             </form>
           </div>
 
-          <!-- TAB 2: Hosted Checkout Option -->
-          <div id="tab-hosted" class="tab-pane">
-            <div class="hosted-info">
-              <h3>Stripe Hosted Checkout Redirect</h3>
-              <p>Prefer sending buyers to a Stripe-hosted URL? Click below to generate an official Checkout Session with localized multi-currency support, international country calling code verification, and Apple Pay / Google Pay.</p>
-              
-              <div class="hosted-action-box">
-                <div class="amount-summary">
-                  <span class="summary-label">Amount:</span>
-                  <span id="hosted-summary-amount" class="summary-value">$25.00 USD</span>
+          <!-- TAB 2: PayPal Payment -->
+          <div id="tab-paypal" class="tab-pane">
+            <div class="method-panel paypal-panel">
+              <div class="panel-header">
+                <div class="method-icon-big">🅿️</div>
+                <div>
+                  <h3>Pay with PayPal</h3>
+                  <p class="panel-desc">Pay securely with your PayPal account balance, linked bank, or PayPal credit.</p>
                 </div>
-                <button type="button" id="hosted-checkout-btn" class="pay-button hosted-btn">
-                  <span>Redirect to Stripe Hosted Checkout &rarr;</span>
+              </div>
+
+              <div class="method-summary-box">
+                <div class="summary-line">
+                  <span>Payable Amount:</span>
+                  <span id="paypal-summary-amount" class="highlight-val">$25.00 USD</span>
+                </div>
+                <div class="summary-line">
+                  <span>Statement Descriptor:</span>
+                  <span class="statement-brand">YOUPI GLOBAL</span>
+                </div>
+              </div>
+
+              <button type="button" id="paypal-pay-btn" class="paypal-official-btn">
+                <span class="paypal-text"><i>Pay</i><i>Pal</i> Checkout</span>
+                <span id="paypal-spinner" class="spinner-small hidden"></span>
+              </button>
+
+              <div id="paypal-status-msg" class="method-status-msg hidden"></div>
+
+              <p class="privacy-small-text">
+                🔒 Bank Privacy: You will be redirected to PayPal's secure portal. Your receiving bank account number remains completely hidden from the buyer.
+              </p>
+            </div>
+          </div>
+
+          <!-- TAB 3: bKash Payment -->
+          <div id="tab-bkash" class="tab-pane">
+            <div class="method-panel bkash-panel">
+              <div class="panel-header bkash-header">
+                <div class="mfs-logo bkash-logo">bKash</div>
+                <div>
+                  <h3>bKash Direct Wallet Payment</h3>
+                  <p class="panel-desc">Pay instantly using your bKash mobile account number with instant BDT conversion.</p>
+                </div>
+              </div>
+
+              <!-- FX Conversion Box -->
+              <div class="fx-conversion-box bkash-fx">
+                <div class="fx-row">
+                  <span>Original Amount:</span>
+                  <span id="bkash-orig-amt">$25.00 USD</span>
+                </div>
+                <div class="fx-row fx-highlight">
+                  <span>Converted BDT Amount (৳):</span>
+                  <strong id="bkash-bdt-amt">৳ 3,062 BDT</strong>
+                </div>
+                <span class="fx-rate-note" id="bkash-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
+              </div>
+
+              <div class="mfs-form" id="bkash-init-form">
+                <label class="form-label">bKash Mobile Account Number</label>
+                <div class="mfs-input-wrapper">
+                  <span class="mfs-prefix">🇧🇩 +88</span>
+                  <input type="tel" id="bkash-wallet-input" placeholder="01XXXXXXXXX" value="01711000111" maxlength="11">
+                </div>
+                <button type="button" id="bkash-init-btn" class="mfs-action-btn bkash-btn">
+                  <span>Proceed with bKash &rarr;</span>
+                  <span id="bkash-init-spinner" class="spinner-small hidden"></span>
                 </button>
+              </div>
+
+              <!-- bKash OTP & PIN Drawer -->
+              <div id="bkash-otp-drawer" class="mfs-otp-drawer hidden">
+                <div class="mfs-security-box bkash-box">
+                  <h4>bKash Verification & PIN</h4>
+                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your bKash mobile number and your 5-digit bKash PIN:</p>
+                  <div class="mfs-grid">
+                    <div>
+                      <label class="form-sublabel">bKash OTP</label>
+                      <input type="text" id="bkash-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                    </div>
+                    <div>
+                      <label class="form-sublabel">bKash PIN</label>
+                      <input type="password" id="bkash-pin-input" placeholder="•••••" maxlength="5" class="otp-input">
+                    </div>
+                  </div>
+                  <div class="mfs-button-row">
+                    <button type="button" id="bkash-confirm-btn" class="mfs-action-btn bkash-btn">
+                      <span>Confirm bKash Payment</span>
+                      <span id="bkash-confirm-spinner" class="spinner-small hidden"></span>
+                    </button>
+                    <button type="button" id="bkash-autofill-btn" class="autofill-otp-button">
+                      ✨ Auto-Fill Test (123456 / 12345)
+                    </button>
+                  </div>
+                  <div id="bkash-error-msg" class="otp-message"></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- TAB 3: Card Payouts & Bank Privacy Guide -->
+          <!-- TAB 4: Nagad Payment -->
+          <div id="tab-nagad" class="tab-pane">
+            <div class="method-panel nagad-panel">
+              <div class="panel-header nagad-header">
+                <div class="mfs-logo nagad-logo">Nagad</div>
+                <div>
+                  <h3>Nagad Digital Financial Service</h3>
+                  <p class="panel-desc">Pay securely using Bangladesh Post Office's Nagad mobile account.</p>
+                </div>
+              </div>
+
+              <div class="fx-conversion-box nagad-fx">
+                <div class="fx-row">
+                  <span>Original Amount:</span>
+                  <span id="nagad-orig-amt">$25.00 USD</span>
+                </div>
+                <div class="fx-row fx-highlight">
+                  <span>Converted BDT Amount (৳):</span>
+                  <strong id="nagad-bdt-amt">৳ 3,062 BDT</strong>
+                </div>
+                <span class="fx-rate-note" id="nagad-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
+              </div>
+
+              <div class="mfs-form" id="nagad-init-form">
+                <label class="form-label">Nagad Account Number</label>
+                <div class="mfs-input-wrapper">
+                  <span class="mfs-prefix">🇧🇩 +88</span>
+                  <input type="tel" id="nagad-wallet-input" placeholder="01XXXXXXXXX" value="01811000222" maxlength="11">
+                </div>
+                <button type="button" id="nagad-init-btn" class="mfs-action-btn nagad-btn">
+                  <span>Proceed with Nagad &rarr;</span>
+                  <span id="nagad-init-spinner" class="spinner-small hidden"></span>
+                </button>
+              </div>
+
+              <!-- Nagad OTP & PIN Drawer -->
+              <div id="nagad-otp-drawer" class="mfs-otp-drawer hidden">
+                <div class="mfs-security-box nagad-box">
+                  <h4>Nagad Verification & PIN</h4>
+                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your Nagad mobile number and your 4-digit Nagad PIN:</p>
+                  <div class="mfs-grid">
+                    <div>
+                      <label class="form-sublabel">Nagad OTP</label>
+                      <input type="text" id="nagad-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                    </div>
+                    <div>
+                      <label class="form-sublabel">Nagad PIN</label>
+                      <input type="password" id="nagad-pin-input" placeholder="••••" maxlength="4" class="otp-input">
+                    </div>
+                  </div>
+                  <div class="mfs-button-row">
+                    <button type="button" id="nagad-confirm-btn" class="mfs-action-btn nagad-btn">
+                      <span>Confirm Nagad Payment</span>
+                      <span id="nagad-confirm-spinner" class="spinner-small hidden"></span>
+                    </button>
+                    <button type="button" id="nagad-autofill-btn" class="autofill-otp-button">
+                      ✨ Auto-Fill Test (123456 / 1234)
+                    </button>
+                  </div>
+                  <div id="nagad-error-msg" class="otp-message"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: Rocket Payment -->
+          <div id="tab-rocket" class="tab-pane">
+            <div class="method-panel rocket-panel">
+              <div class="panel-header rocket-header">
+                <div class="mfs-logo rocket-logo">Rocket</div>
+                <div>
+                  <h3>DBBL Rocket Mobile Banking</h3>
+                  <p class="panel-desc">Pay using Dutch-Bangla Bank's Rocket 12-digit mobile banking account.</p>
+                </div>
+              </div>
+
+              <div class="fx-conversion-box rocket-fx">
+                <div class="fx-row">
+                  <span>Original Amount:</span>
+                  <span id="rocket-orig-amt">$25.00 USD</span>
+                </div>
+                <div class="fx-row fx-highlight">
+                  <span>Converted BDT Amount (৳):</span>
+                  <strong id="rocket-bdt-amt">৳ 3,062 BDT</strong>
+                </div>
+                <span class="fx-rate-note" id="rocket-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
+              </div>
+
+              <div class="mfs-form" id="rocket-init-form">
+                <label class="form-label">Rocket 12-Digit Account (Mobile + Check Digit)</label>
+                <div class="mfs-input-wrapper">
+                  <span class="mfs-prefix">🇧🇩 +88</span>
+                  <input type="tel" id="rocket-wallet-input" placeholder="01XXXXXXXXXX" value="019110003331" maxlength="12">
+                </div>
+                <button type="button" id="rocket-init-btn" class="mfs-action-btn rocket-btn">
+                  <span>Proceed with Rocket &rarr;</span>
+                  <span id="rocket-init-spinner" class="spinner-small hidden"></span>
+                </button>
+              </div>
+
+              <!-- Rocket OTP & PIN Drawer -->
+              <div id="rocket-otp-drawer" class="mfs-otp-drawer hidden">
+                <div class="mfs-security-box rocket-box">
+                  <h4>Rocket Verification & PIN</h4>
+                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your Rocket mobile number and your 4-digit Rocket PIN:</p>
+                  <div class="mfs-grid">
+                    <div>
+                      <label class="form-sublabel">Rocket OTP</label>
+                      <input type="text" id="rocket-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                    </div>
+                    <div>
+                      <label class="form-sublabel">Rocket PIN</label>
+                      <input type="password" id="rocket-pin-input" placeholder="••••" maxlength="4" class="otp-input">
+                    </div>
+                  </div>
+                  <div class="mfs-button-row">
+                    <button type="button" id="rocket-confirm-btn" class="mfs-action-btn rocket-btn">
+                      <span>Confirm Rocket Payment</span>
+                      <span id="rocket-confirm-spinner" class="spinner-small hidden"></span>
+                    </button>
+                    <button type="button" id="rocket-autofill-btn" class="autofill-otp-button">
+                      ✨ Auto-Fill Test (123456 / 1234)
+                    </button>
+                  </div>
+                  <div id="rocket-error-msg" class="otp-message"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 6: UPI & QR (India Zero-Fee) -->
+          <div id="tab-upi" class="tab-pane">
+            <div class="method-panel upi-panel">
+              <div class="panel-header">
+                <div class="method-icon-big">⚡</div>
+                <div>
+                  <h3>UPI & Indian Banking Gateway</h3>
+                  <p class="panel-desc">Zero-fee instant peer-to-merchant UPI payments via PhonePe, Google Pay, Paytm, and BHIM QR.</p>
+                </div>
+              </div>
+
+              <div class="method-summary-box">
+                <div class="summary-line">
+                  <span>Payable Amount (INR):</span>
+                  <span id="upi-summary-amount" class="highlight-val">₹ 2,050.00 INR</span>
+                </div>
+                <div class="summary-line">
+                  <span>Supported Apps:</span>
+                  <span>Google Pay, PhonePe, Paytm, CRED, BHIM</span>
+                </div>
+              </div>
+
+              <a href="http://localhost:5000" target="_blank" class="pay-button upi-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>Launch UPI Sovereign Checkout &rarr;</span>
+              </a>
+
+              <p class="privacy-small-text">
+                Operates through YOUPI PG sovereign banking observer engine with automatic SMS and Gmail reconciliation.
+              </p>
+            </div>
+          </div>
+
+          <!-- TAB 7: Card Payouts & Bank Privacy Guide -->
           <div id="tab-payouts" class="tab-pane">
             <div class="payouts-guide">
               <div class="guide-card highlight">
                 <h3>🛡️ How Your Bank Stays 100% Confidential</h3>
-                <p>When customers pay through your Stripe integration:</p>
+                <p>When customers pay through your universal payment gateway:</p>
                 <ul>
-                  <li><strong>Customers never see your bank details:</strong> Your bank account number, IFSC/routing number, and personal card numbers are never exposed.</li>
-                  <li><strong>Statement Descriptor:</strong> The buyer’s bank or credit card statement only shows your store name (e.g. <code>YOUPI GLOBAL</code> or your business brand), keeping your private bank routing completely hidden.</li>
+                  <li><strong>Customers never see your bank details:</strong> Your bank account number, IFSC/routing code, SWIFT, and personal debit card numbers are never exposed.</li>
+                  <li><strong>Statement Descriptor:</strong> The buyer’s bank or card statement only shows your store name (e.g. <code>YOUPI GLOBAL</code> or your business brand), keeping your private bank routing completely hidden.</li>
                 </ul>
               </div>
 
@@ -207,8 +451,8 @@
               </div>
 
               <div class="guide-card">
-                <h3>🌐 International Multi-Currency Conversion</h3>
-                <p>Customers pay in their home currency (USD, EUR, GBP, CAD, AUD, etc.), and Stripe automatically handles FX conversion and settles into your payout card or bank.</p>
+                <h3>🌐 Multi-Method Currency Settlements</h3>
+                <p>Customers can pay in their preferred currency or domestic MFS wallet (Card in USD/EUR/GBP, PayPal, bKash in BDT, Nagad in BDT, Rocket in BDT, or UPI in INR), and all payouts settle safely into your private destination.</p>
               </div>
             </div>
           </div>
@@ -221,6 +465,10 @@
             <div class="summary-row">
               <span>Item</span>
               <span>International Top-up</span>
+            </div>
+            <div class="summary-row">
+              <span>Selected Method</span>
+              <span id="summary-method-badge" class="badge">💳 Card</span>
             </div>
             <div class="summary-row">
               <span>Currency</span>
@@ -243,32 +491,43 @@
               <span>Total to Pay:</span>
               <span id="summary-total" class="total-amount">$25.00</span>
             </div>
+            <div class="summary-row bdt-row" id="summary-bdt-row">
+              <span>BDT Equivalent:</span>
+              <span id="summary-bdt-total" style="color: #f43f5e; font-weight: 700;">৳ 3,062</span>
+            </div>
           </div>
 
-          <!-- Keys Configuration Helper Box -->
+          <!-- Configuration Status Helper Box -->
           <div class="config-box">
-            <h3>⚙️ Gateway Configuration</h3>
-            <p class="config-desc">International multi-currency system configuration:</p>
+            <h3>⚙️ Active Payment Providers</h3>
             <div class="config-fields">
               <div class="config-field">
-                <span class="field-name">Publishable Key:</span>
-                <code id="config-pk-status">Loading...</code>
+                <span class="field-name">💳 Credit / Debit Card:</span>
+                <code id="config-card-status">Stripe (Active)</code>
               </div>
               <div class="config-field">
-                <span class="field-name">Statement Descriptor:</span>
-                <code id="config-descriptor">YOUPI GLOBAL</code>
+                <span class="field-name">🅿️ PayPal:</span>
+                <code id="config-paypal-status">PayPal v2 (Active)</code>
               </div>
               <div class="config-field">
-                <span class="field-name">Supported Currencies:</span>
-                <code id="config-currency-count">136 ISO Currencies</code>
+                <span class="field-name">📱 bKash MFS:</span>
+                <code id="config-bkash-status">bKash PG (Active)</code>
               </div>
               <div class="config-field">
-                <span class="field-name">Country Dial Codes:</span>
-                <code id="config-country-count">155 Countries</code>
+                <span class="field-name">📲 Nagad MFS:</span>
+                <code id="config-nagad-status">Nagad PG (Active)</code>
+              </div>
+              <div class="config-field">
+                <span class="field-name">🚀 Rocket DBBL:</span>
+                <code id="config-rocket-status">Rocket MFS (Active)</code>
+              </div>
+              <div class="config-field">
+                <span class="field-name">⚡ UPI (India):</span>
+                <code id="config-upi-status">YOUPI Core (Port 6100)</code>
               </div>
             </div>
             <div class="config-tip">
-              <strong>💡 Tip:</strong> Paste your real Stripe API keys in <code>.env</code> (<code>STRIPE_SECRET_KEY=sk_test_...</code> and <code>STRIPE_PUBLISHABLE_KEY=pk_test_...</code>) to switch instantly from sandbox simulator to live Stripe processing.
+              <strong>🔒 Statement Privacy:</strong> All transactions appear with your custom business descriptor (<code>YOUPI GLOBAL</code>). Your personal bank account and card details remain strictly confidential.
             </div>
           </div>
         </div>
@@ -276,7 +535,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>&copy; 2026 YOUPI Global &bull; Stripe Certified Integration &bull; 136+ Currencies &bull; 155+ Country Dialing Codes</p>
+      <p>&copy; 2026 YOUPI Universal Gateway &bull; Card &bull; PayPal &bull; bKash &bull; Nagad &bull; Rocket &bull; UPI &bull; 136 Currencies</p>
     </footer>
   </div>
 

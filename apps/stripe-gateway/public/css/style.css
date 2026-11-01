@@ -841,6 +841,349 @@ h1 {
   display: inline-block;
 }
 
+/* Common Amount Bar */
+.common-amount-bar {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+/* Method Specific Tab Colors */
+.bkash-tab-btn.active {
+  background: #e2136e !important;
+  color: #fff !important;
+}
+.nagad-tab-btn.active {
+  background: #f7941d !important;
+  color: #fff !important;
+}
+.rocket-tab-btn.active {
+  background: #8c3494 !important;
+  color: #fff !important;
+}
+.upi-tab-btn.active {
+  background: #0ea5e9 !important;
+  color: #fff !important;
+}
+
+/* Method Panels */
+.method-panel {
+  padding: 10px 0;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.method-icon-big {
+  font-size: 32px;
+}
+
+.panel-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.method-summary-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.highlight-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.statement-brand {
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* PayPal Button */
+.paypal-official-btn {
+  width: 100%;
+  background: #ffc439;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #003087;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 196, 57, 0.3);
+}
+
+.paypal-official-btn:hover {
+  background: #f4b41a;
+  transform: translateY(-1px);
+}
+
+.paypal-text i:first-child {
+  color: #003087;
+  font-style: italic;
+  font-weight: 900;
+}
+
+.paypal-text i:last-child {
+  color: #0079c1;
+  font-style: italic;
+  font-weight: 900;
+}
+
+/* MFS Logos & Styles (bKash, Nagad, Rocket) */
+.mfs-logo {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: #fff;
+  display: inline-block;
+}
+
+.bkash-logo {
+  background: #e2136e;
+}
+.nagad-logo {
+  background: #f7941d;
+}
+.rocket-logo {
+  background: #8c3494;
+}
+
+/* FX Conversion Cards */
+.fx-conversion-box {
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid var(--accent-primary);
+}
+
+.bkash-fx {
+  border-left-color: #e2136e;
+}
+.nagad-fx {
+  border-left-color: #f7941d;
+}
+.rocket-fx {
+  border-left-color: #8c3494;
+}
+
+.fx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.fx-highlight {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.fx-highlight strong {
+  font-size: 20px;
+}
+
+.bkash-fx .fx-highlight strong {
+  color: #e2136e;
+}
+.nagad-fx .fx-highlight strong {
+  color: #f7941d;
+}
+.rocket-fx .fx-highlight strong {
+  color: #8c3494;
+}
+
+.fx-rate-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 6px;
+}
+
+/* MFS Inputs & Actions */
+.mfs-form {
+  margin-bottom: 20px;
+}
+
+.mfs-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.mfs-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+}
+
+.mfs-prefix {
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+.mfs-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  outline: none;
+  letter-spacing: 1px;
+}
+
+.mfs-action-btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.bkash-btn {
+  background: #e2136e;
+}
+.bkash-btn:hover {
+  background: #c80d5e;
+}
+
+.nagad-btn {
+  background: #f7941d;
+}
+.nagad-btn:hover {
+  background: #e08112;
+}
+
+.rocket-btn {
+  background: #8c3494;
+}
+.rocket-btn:hover {
+  background: #73267a;
+}
+
+.upi-btn {
+  background: #0ea5e9;
+}
+.upi-btn:hover {
+  background: #0284c7;
+}
+
+/* MFS Security / Verification Drawer */
+.mfs-security-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 18px;
+  margin-top: 14px;
+}
+
+.bkash-box {
+  border-color: rgba(226, 19, 110, 0.4);
+}
+.nagad-box {
+  border-color: rgba(247, 148, 29, 0.4);
+}
+.rocket-box {
+  border-color: rgba(140, 52, 148, 0.4);
+}
+
+.mfs-security-box h4 {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.mfs-instruction {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.mfs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.form-sublabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.mfs-grid input {
+  width: 100%;
+}
+
+.mfs-button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mfs-button-row .mfs-action-btn {
+  flex: 1;
+  min-width: 180px;
+}
+
+.privacy-small-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 14px;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

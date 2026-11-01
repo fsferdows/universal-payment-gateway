@@ -78,7 +78,15 @@
         </div>
         <div class="receipt-row">
           <span>Payment Method:</span>
-          <span>Credit / Debit Card (via Stripe)</span>
+          <span id="receipt-method">Credit / Debit Card</span>
+        </div>
+        <div class="receipt-row" id="receipt-trx-row" style="display: none;">
+          <span>Transaction ID (TRXID):</span>
+          <code id="receipt-trx" style="color: var(--accent-primary);"></code>
+        </div>
+        <div class="receipt-row" id="receipt-wallet-row" style="display: none;">
+          <span>Customer Wallet:</span>
+          <span id="receipt-wallet"></span>
         </div>
         <div class="receipt-row" id="receipt-phone-row" style="display: none;">
           <span>Verified Phone Number:</span>
@@ -104,15 +112,39 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('order_id') || 'ORD-' + Date.now();
-    const pi = params.get('payment_intent') || params.get('session_id') || 'pi_verified_auth';
+    const method = (params.get('method') || 'card').toLowerCase();
+    const trxId = params.get('trx_id');
+    const paypalOrderId = params.get('paypal_order_id');
+    const pi = params.get('payment_intent') || params.get('session_id') || paypalOrderId || trxId || 'auth_completed';
     const amount = params.get('amount') || '25.00';
-    const currency = params.get('currency') || 'USD';
+    const currency = (params.get('currency') || 'USD').toUpperCase();
     const phone = params.get('phone');
     const verified = params.get('verified');
+    const wallet = params.get('wallet');
 
+    const methodLabels = {
+      card: '💳 Credit / Debit Card (via Stripe)',
+      paypal: '🅿️ PayPal Instant Payment',
+      bkash: '📱 bKash Direct Wallet',
+      nagad: '📲 Nagad Digital Financial Service',
+      rocket: '🚀 DBBL Rocket Mobile Banking',
+      upi: '⚡ UPI / QR Payment'
+    };
+
+    document.getElementById('receipt-method').textContent = methodLabels[method] || method.toUpperCase();
     document.getElementById('receipt-order').textContent = orderId;
-    document.getElementById('receipt-pi').textContent = pi.length > 20 ? `${pi.slice(0, 10)}...${pi.slice(-6)}` : pi;
-    document.getElementById('receipt-amount').textContent = `${amount} ${currency}`;
+    document.getElementById('receipt-pi').textContent = pi.length > 24 ? `${pi.slice(0, 12)}...${pi.slice(-6)}` : pi;
+    document.getElementById('receipt-amount').textContent = currency === 'BDT' ? `৳ ${amount} BDT` : `${amount} ${currency}`;
+
+    if (trxId) {
+      document.getElementById('receipt-trx').textContent = trxId;
+      document.getElementById('receipt-trx-row').style.display = 'flex';
+    }
+
+    if (wallet) {
+      document.getElementById('receipt-wallet').textContent = wallet;
+      document.getElementById('receipt-wallet-row').style.display = 'flex';
+    }
 
     if (phone) {
       const phoneRow = document.getElementById('receipt-phone-row');
