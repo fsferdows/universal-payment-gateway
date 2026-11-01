@@ -150,15 +150,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Update mode badge
-  if (config.isMockMode) {
-    modeBadge.textContent = '🟡 Sandbox Simulator';
-    modeBadge.className = 'mode-badge sandbox';
-    configPkStatus.textContent = 'Simulated (Add real keys in .env)';
-  } else {
-    modeBadge.textContent = '🟢 Live Multi-Method Mode';
-    modeBadge.className = 'mode-badge live';
-    configPkStatus.textContent = config.publishableKey ? `${config.publishableKey.slice(0, 8)}...` : 'Configured';
+  // Update mode badge & config status
+  if (modeBadge) {
+    if (config.isMockMode) {
+      modeBadge.textContent = '🟡 SANDBOX SIMULATOR';
+      modeBadge.className = 'mode-badge sandbox';
+    } else {
+      modeBadge.textContent = '🟢 LIVE MULTI-METHOD';
+      modeBadge.className = 'mode-badge live';
+    }
+  }
+
+  const configCardStatus = document.getElementById('config-card-status');
+  if (configCardStatus) {
+    configCardStatus.textContent = config.isMockMode ? 'Stripe Simulator (Active)' : 'Stripe Live';
+  }
+  if (configPkStatus) {
+    configPkStatus.textContent = config.isMockMode ? 'Simulated Sandbox' : (config.publishableKey ? `${config.publishableKey.slice(0, 8)}...` : 'Configured');
   }
 
   // Update Country Dial Code badge
@@ -722,34 +730,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderSimulatedCardForm();
   }
 
+  function attachCardFillListener() {
+    const fillBtn = document.getElementById('fill-test-btn');
+    if (fillBtn) {
+      fillBtn.onclick = () => {
+        const cardNum = document.getElementById('sim-card-num');
+        const cardExp = document.getElementById('sim-exp');
+        const cardCvc = document.getElementById('sim-cvc');
+        if (cardNum) cardNum.value = '4242 4242 4242 4242';
+        if (cardExp) cardExp.value = '12 / 28';
+        if (cardCvc) cardCvc.value = '123';
+      };
+    }
+  }
+
   function renderSimulatedCardForm() {
     if (!paymentElementContainer) return;
     paymentElementContainer.innerHTML = `
       <div class="simulated-card-box">
         <div class="simulated-field">
-          <label>Card Number</label>
-          <input type="text" id="sim-card-num" value="4242 &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4242" placeholder="4242 4242 4242 4242">
+          <label for="sim-card-num">Card Number</label>
+          <input type="text" id="sim-card-num" value="4242 4242 4242 4242" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
         </div>
         <div class="input-grid">
           <div class="simulated-field">
-            <label>MM / YY</label>
-            <input type="text" id="sim-exp" value="12 / 28" placeholder="12 / 28">
+            <label for="sim-exp">MM / YY</label>
+            <input type="text" id="sim-exp" value="12 / 28" placeholder="12 / 28" autocomplete="cc-exp">
           </div>
           <div class="simulated-field">
-            <label>CVC</label>
-            <input type="text" id="sim-cvc" value="123" placeholder="123">
+            <label for="sim-cvc">CVC</label>
+            <input type="text" id="sim-cvc" value="123" placeholder="123" autocomplete="cc-csc">
           </div>
         </div>
         <button type="button" class="fill-test-btn" id="fill-test-btn">✨ Auto-Fill Test Card (4242)</button>
       </div>
     `;
-
-    document.getElementById('fill-test-btn')?.addEventListener('click', () => {
-      document.getElementById('sim-card-num').value = '4242 4242 4242 4242';
-      document.getElementById('sim-exp').value = '12 / 28';
-      document.getElementById('sim-cvc').value = '123';
-    });
+    attachCardFillListener();
   }
+
+  attachCardFillListener();
 
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;

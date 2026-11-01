@@ -29,13 +29,13 @@
         <div class="card checkout-card">
           <!-- Universal Payment Method Tabs -->
           <div class="tabs">
-            <button class="tab-btn active" data-tab="elements">💳 Card</button>
-            <button class="tab-btn" data-tab="paypal">🅿️ PayPal</button>
-            <button class="tab-btn bkash-tab-btn" data-tab="bkash">📱 bKash</button>
-            <button class="tab-btn nagad-tab-btn" data-tab="nagad">📲 Nagad</button>
-            <button class="tab-btn rocket-tab-btn" data-tab="rocket">🚀 Rocket</button>
-            <button class="tab-btn upi-tab-btn" data-tab="upi">⚡ UPI</button>
-            <button class="tab-btn" data-tab="payouts">🏦 Bank Privacy</button>
+            <button class="tab-btn active" data-tab="elements"><span class="tab-icon">💳</span>Card</button>
+            <button class="tab-btn" data-tab="paypal"><span class="tab-icon">🅿️</span>PayPal</button>
+            <button class="tab-btn bkash-tab-btn" data-tab="bkash"><span class="tab-icon">📱</span>bKash</button>
+            <button class="tab-btn nagad-tab-btn" data-tab="nagad"><span class="tab-icon">📲</span>Nagad</button>
+            <button class="tab-btn rocket-tab-btn" data-tab="rocket"><span class="tab-icon">🚀</span>Rocket</button>
+            <button class="tab-btn upi-tab-btn" data-tab="upi"><span class="tab-icon">⚡</span>UPI</button>
+            <button class="tab-btn" data-tab="payouts"><span class="tab-icon">🏦</span>Bank Privacy</button>
           </div>
 
           <!-- Common Amount & Currency Selector (Syncs across all methods) -->
@@ -144,7 +144,25 @@
 
                 <!-- Stripe Elements Container -->
                 <div id="stripe-element-container">
-                  <div id="payment-element"></div>
+                  <div id="payment-element">
+                    <div class="simulated-card-box">
+                      <div class="simulated-field">
+                        <label for="sim-card-num">Card Number</label>
+                        <input type="text" id="sim-card-num" value="4242 4242 4242 4242" placeholder="4242 4242 4242 4242" autocomplete="cc-number">
+                      </div>
+                      <div class="input-grid">
+                        <div class="simulated-field">
+                          <label for="sim-exp">MM / YY</label>
+                          <input type="text" id="sim-exp" value="12 / 28" placeholder="12 / 28" autocomplete="cc-exp">
+                        </div>
+                        <div class="simulated-field">
+                          <label for="sim-cvc">CVC</label>
+                          <input type="text" id="sim-cvc" value="123" placeholder="123" autocomplete="cc-csc">
+                        </div>
+                      </div>
+                      <button type="button" class="fill-test-btn" id="fill-test-btn">✨ Auto-Fill Test Card (4242)</button>
+                    </div>
+                  </div>
                   <div id="payment-message" class="hidden"></div>
                 </div>
               </div>
@@ -504,6 +522,10 @@
               <div class="config-field">
                 <span class="field-name">💳 Credit / Debit Card:</span>
                 <code id="config-card-status">Stripe (Active)</code>
+              </div>
+              <div class="config-field">
+                <span class="field-name">🔑 Publishable Key:</span>
+                <code id="config-pk-status">pk_test_sample_key</code>
               </div>
               <div class="config-field">
                 <span class="field-name">🅿️ PayPal:</span>
