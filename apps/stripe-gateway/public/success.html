@@ -80,6 +80,10 @@
           <span>Payment Method:</span>
           <span>Credit / Debit Card (via Stripe)</span>
         </div>
+        <div class="receipt-row" id="receipt-phone-row" style="display: none;">
+          <span>Verified Phone Number:</span>
+          <span id="receipt-phone" style="color: var(--success); font-weight: 600;"></span>
+        </div>
         <div class="receipt-row highlight">
           <span>Amount Paid:</span>
           <span id="receipt-amount" style="color: var(--success);">$25.00 USD</span>
@@ -103,10 +107,20 @@
     const pi = params.get('payment_intent') || params.get('session_id') || 'pi_verified_auth';
     const amount = params.get('amount') || '25.00';
     const currency = params.get('currency') || 'USD';
+    const phone = params.get('phone');
+    const verified = params.get('verified');
 
     document.getElementById('receipt-order').textContent = orderId;
     document.getElementById('receipt-pi').textContent = pi.length > 20 ? `${pi.slice(0, 10)}...${pi.slice(-6)}` : pi;
     document.getElementById('receipt-amount').textContent = `${amount} ${currency}`;
+
+    if (phone) {
+      const phoneRow = document.getElementById('receipt-phone-row');
+      const phoneEl = document.getElementById('receipt-phone');
+      phoneEl.textContent = `${phone} ${verified === 'true' ? '✓ (Verified)' : ''}`;
+      phoneRow.style.display = 'flex';
+    }
   </script>
 </body>
 </html>
+

@@ -4,6 +4,17 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import Stripe from 'stripe';
+import {
+  ZERO_DECIMAL_CURRENCIES,
+  CURRENCIES,
+  COUNTRIES,
+  getAllCurrencies,
+  getAllCountries,
+  getCurrency,
+  getCountry,
+  validatePhoneNumber,
+  formatPhoneNumber
+} from './data/currencies-and-countries.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,12 +31,6 @@ const BASE_SECURITY_HEADERS = Object.freeze({
   'X-Frame-Options': 'SAMEORIGIN',
   'Referrer-Policy': 'strict-origin-when-cross-origin'
 });
-
-/** Zero-decimal currencies according to ISO / Stripe specifications */
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga',
-  'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'
-]);
 
 /**
  * Converts a decimal amount (e.g. 29.99 USD) into the smallest currency unit (e.g. 2999 cents).
@@ -54,6 +59,18 @@ export function formatCurrencyAmount(unitAmount, currency = 'usd') {
   return (num / 100).toFixed(2);
 }
 
+export {
+  ZERO_DECIMAL_CURRENCIES,
+  CURRENCIES,
+  COUNTRIES,
+  getAllCurrencies,
+  getAllCountries,
+  getCurrency,
+  getCountry,
+  validatePhoneNumber,
+  formatPhoneNumber
+};
+
 export class StripeGatewayServer {
   constructor(options = {}) {
     this.port = Number(options.port || process.env.STRIPE_GATEWAY_PORT || 4242);
@@ -77,6 +94,7 @@ export class StripeGatewayServer {
 
     this.publicDir = path.resolve(__dirname, '../public');
     this.paymentsLedger = new Map(); // In-memory tracking of created intents/sessions
+    this.verificationCodes = new Map(); // E.164 phone verification codes store
   }
 
   /**
@@ -191,35 +209,118 @@ export class StripeGatewayServer {
           mode: this.isMockMode ? 'SANDBOX_SIMULATOR' : 'LIVE_STRIPE',
           publishableKeyConfigured: Boolean(this.publishableKey && !this.publishableKey.includes('your-stripe')),
           defaultCurrency: this.defaultCurrency,
+          totalCurrencies: CURRENCIES.length,
+          totalCountries: COUNTRIES.length,
           timestamp: new Date().toISOString()
         });
         return;
       }
 
-      // 2. GET /api/config
+      // 2. GET /api/currencies (Full ISO currencies & country dialing codes catalog)
+      if (pathname === '/api/currencies' && method === 'GET') {
+        StripeGatewayServer.sendJson(res, 200, {
+          currencies: getAllCurrencies(),
+          countries: getAllCountries(),
+          totalCurrencies: CURRENCIES.length,
+          totalCountries: COUNTRIES.length
+        });
+        return;
+      }
+
+      // 3. GET /api/config
       if (pathname === '/api/config' && method === 'GET') {
         StripeGatewayServer.sendJson(res, 200, {
           publishableKey: this.publishableKey || 'pk_test_sample_key_for_testing',
           defaultCurrency: this.defaultCurrency,
           statementDescriptor: this.statementDescriptor,
           isMockMode: this.isMockMode,
-          supportedCurrencies: [
-            { code: 'usd', symbol: '$', name: 'US Dollar (USD)' },
-            { code: 'eur', symbol: '€', name: 'Euro (EUR)' },
-            { code: 'gbp', symbol: '£', name: 'British Pound (GBP)' },
-            { code: 'cad', symbol: 'C$', name: 'Canadian Dollar (CAD)' },
-            { code: 'aud', symbol: 'A$', name: 'Australian Dollar (AUD)' },
-            { code: 'jpy', symbol: '¥', name: 'Japanese Yen (JPY)' },
-            { code: 'inr', symbol: '₹', name: 'Indian Rupee (INR)' },
-            { code: 'sgd', symbol: 'S$', name: 'Singapore Dollar (SGD)' },
-            { code: 'aed', symbol: 'AED', name: 'UAE Dirham (AED)' },
-            { code: 'chf', symbol: 'CHF', name: 'Swiss Franc (CHF)' }
-          ]
+          supportedCurrencies: getAllCurrencies(),
+          countries: getAllCountries(),
+          totalCurrencies: CURRENCIES.length,
+          totalCountries: COUNTRIES.length
         });
         return;
       }
 
-      // 3. POST /api/create-payment-intent (for Stripe Elements inline card checkout)
+      // 4. POST /api/verify/send-code (Customer phone number verification with country dialing code)
+      if (pathname === '/api/verify/send-code' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { dialCode, nationalNumber, countryCode } = body;
+          const validation = validatePhoneNumber(dialCode, nationalNumber);
+          if (!validation.valid) {
+            StripeGatewayServer.sendJson(res, 400, { error: validation.error });
+            return;
+          }
+
+          const code = `${crypto.randomInt(100000, 999999)}`;
+          const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
+          this.verificationCodes.set(validation.e164, {
+            code,
+            e164: validation.e164,
+            dialCode: validation.dialCode,
+            nationalNumber: validation.nationalNumber,
+            countryCode: countryCode || null,
+            expiresAt,
+            verified: false
+          });
+
+          console.log(`[Stripe Gateway] SMS Verification code generated for ${validation.e164}: ${code}`);
+          StripeGatewayServer.sendJson(res, 200, {
+            success: true,
+            message: `Verification code sent to ${validation.e164}`,
+            e164: validation.e164,
+            formattedPhone: formatPhoneNumber(validation.dialCode, validation.nationalNumber),
+            sampleCode: code // Provided for instant sandbox testing / automated verification
+          });
+        } catch (err) {
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // 5. POST /api/verify/check-code (Check 6-digit phone verification code)
+      if (pathname === '/api/verify/check-code' && method === 'POST') {
+        try {
+          const body = await StripeGatewayServer.parseBody(req);
+          const { dialCode, nationalNumber, code } = body;
+          const validation = validatePhoneNumber(dialCode, nationalNumber);
+          if (!validation.valid) {
+            StripeGatewayServer.sendJson(res, 400, { error: validation.error });
+            return;
+          }
+
+          const record = this.verificationCodes.get(validation.e164);
+          if (!record) {
+            StripeGatewayServer.sendJson(res, 400, { error: 'No verification code requested for this number' });
+            return;
+          }
+
+          if (Date.now() > record.expiresAt) {
+            this.verificationCodes.delete(validation.e164);
+            StripeGatewayServer.sendJson(res, 400, { error: 'Verification code has expired. Please request a new one.' });
+            return;
+          }
+
+          if (record.code !== String(code).trim()) {
+            StripeGatewayServer.sendJson(res, 400, { error: 'Invalid verification code. Please check and try again.' });
+            return;
+          }
+
+          record.verified = true;
+          StripeGatewayServer.sendJson(res, 200, {
+            success: true,
+            verified: true,
+            e164: validation.e164,
+            message: 'Phone number verified successfully'
+          });
+        } catch (err) {
+          StripeGatewayServer.sendJson(res, 400, { error: err.message });
+        }
+        return;
+      }
+
+      // 6. POST /api/create-payment-intent (for Stripe Elements inline card checkout)
       if (pathname === '/api/create-payment-intent' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -228,6 +329,9 @@ export class StripeGatewayServer {
           const orderId = body.orderId || `ORD-${Date.now()}`;
           const customerEmail = body.customerEmail || null;
           const customerName = body.customerName || null;
+          const customerPhone = body.customerPhone || null;
+          const countryCode = body.countryCode || null;
+          const phoneVerified = Boolean(body.phoneVerified);
           const unitAmount = toSmallestUnit(rawAmount, currency);
 
           let clientSecret;
@@ -243,6 +347,9 @@ export class StripeGatewayServer {
                 orderId,
                 customerEmail: customerEmail || '',
                 customerName: customerName || '',
+                customerPhone: customerPhone || '',
+                countryCode: countryCode || '',
+                phoneVerified: phoneVerified ? 'true' : 'false',
                 ...(body.metadata || {})
               },
               ...(customerEmail ? { receipt_email: customerEmail } : {})
@@ -264,6 +371,9 @@ export class StripeGatewayServer {
             status: 'requires_payment_method',
             customerEmail,
             customerName,
+            customerPhone,
+            countryCode,
+            phoneVerified,
             createdAt: new Date().toISOString()
           });
 
@@ -274,6 +384,8 @@ export class StripeGatewayServer {
             amount: unitAmount,
             formattedAmount: formatCurrencyAmount(unitAmount, currency),
             currency: currency.toUpperCase(),
+            customerPhone,
+            phoneVerified,
             isMockMode: this.isMockMode
           });
         } catch (err) {
@@ -283,7 +395,7 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 4. POST /api/create-checkout-session (for Stripe Hosted Checkout redirect mode)
+      // 7. POST /api/create-checkout-session (for Stripe Hosted Checkout redirect mode)
       if (pathname === '/api/create-checkout-session' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -291,6 +403,8 @@ export class StripeGatewayServer {
           const currency = (body.currency || this.defaultCurrency).toLowerCase();
           const orderId = body.orderId || `ORD-${Date.now()}`;
           const productName = body.productName || 'International Order Top-up';
+          const customerPhone = body.customerPhone || null;
+          const countryCode = body.countryCode || null;
           const unitAmount = toSmallestUnit(rawAmount, currency);
 
           const origin = req.headers.origin || `http://${req.headers.host || 'localhost:4242'}`;
@@ -303,6 +417,7 @@ export class StripeGatewayServer {
           if (!this.isMockMode && this.stripe) {
             const session = await this.stripe.checkout.sessions.create({
               payment_method_types: ['card'],
+              phone_number_collection: { enabled: true },
               line_items: [
                 {
                   price_data: {
@@ -319,7 +434,12 @@ export class StripeGatewayServer {
               mode: 'payment',
               success_url: successUrl,
               cancel_url: cancelUrl,
-              metadata: { orderId, ...(body.metadata || {}) }
+              metadata: {
+                orderId,
+                customerPhone: customerPhone || '',
+                countryCode: countryCode || '',
+                ...(body.metadata || {})
+              }
             });
             checkoutUrl = session.url;
             sessionId = session.id;
@@ -343,7 +463,7 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 5. POST /api/confirm-simulated-payment (for testing simulated card checkout in sandbox mode)
+      // 8. POST /api/confirm-simulated-payment (for testing simulated card checkout in sandbox mode)
       if (pathname === '/api/confirm-simulated-payment' && method === 'POST') {
         try {
           const body = await StripeGatewayServer.parseBody(req);
@@ -369,7 +489,7 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 6. POST /api/webhook (Stripe Webhook Listener with HMAC validation)
+      // 9. POST /api/webhook (Stripe Webhook Listener with HMAC validation)
       if (pathname === '/api/webhook' && method === 'POST') {
         const rawBody = await StripeGatewayServer.readRawBody(req);
         const sig = req.headers['stripe-signature'];
@@ -418,7 +538,7 @@ export class StripeGatewayServer {
         return;
       }
 
-      // 7. Static Frontend Routing
+      // 10. Static Frontend Routing
       if (method === 'GET') {
         let filePath = path.join(this.publicDir, pathname === '/' ? 'index.html' : pathname);
         this.serveStaticFile(res, filePath);
@@ -438,6 +558,8 @@ export class StripeGatewayServer {
       console.log(`💳 Stripe International Gateway online at: http://localhost:${p}`);
       console.log(`• Mode:               ${this.isMockMode ? '🟡 Developer Sandbox (Simulator)' : '🟢 Live Stripe Production/Test'}`);
       console.log(`• Default Currency:   ${this.defaultCurrency.toUpperCase()}`);
+      console.log(`• Currencies Loaded:  ${CURRENCIES.length} ISO currencies`);
+      console.log(`• Country Codes:      ${COUNTRIES.length} verification country dialing codes`);
       console.log(`• Statement Brand:    ${this.statementDescriptor}`);
       console.log(`====================================================`);
       if (callback) callback();
