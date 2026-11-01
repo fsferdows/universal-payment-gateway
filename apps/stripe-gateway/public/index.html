@@ -222,8 +222,8 @@
               <div class="panel-header bkash-header">
                 <div class="mfs-logo bkash-logo">bKash</div>
                 <div>
-                  <h3>bKash Direct Wallet Payment</h3>
-                  <p class="panel-desc">Pay instantly using your bKash mobile account number with instant BDT conversion.</p>
+                  <h3>bKash Peer-to-Peer & SMS Observer</h3>
+                  <p class="panel-desc">Zero-fee direct payment to personal bKash wallet with automatic SMS verification.</p>
                 </div>
               </div>
 
@@ -240,40 +240,104 @@
                 <span class="fx-rate-note" id="bkash-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
               </div>
 
-              <div class="mfs-form" id="bkash-init-form">
-                <label class="form-label">bKash Mobile Account Number</label>
-                <div class="mfs-input-wrapper">
-                  <span class="mfs-prefix">🇧🇩 +88</span>
-                  <input type="tel" id="bkash-wallet-input" placeholder="01XXXXXXXXX" value="01711000111" maxlength="11">
+              <!-- P2P Send Money Instructions -->
+              <div class="p2p-instructions-box bkash-p2p">
+                <span class="p2p-step-badge">STEP 1: SEND MONEY FROM BKASH APP</span>
+                <p class="mfs-instruction">Open your bKash app, choose <strong>Send Money</strong>, and transfer the exact amount to the personal merchant wallet below:</p>
+                <div class="p2p-detail-grid">
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Merchant bKash Number</span>
+                      <span class="p2p-field-val" id="bkash-receiver-display">01XXXXXXXXX</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="bkash-receiver-display">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Exact Payable Amount</span>
+                      <span class="p2p-field-val" id="bkash-amount-copy">৳ 3,062</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="bkash-amount-copy">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card" style="grid-column: 1 / -1;">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Counter / Order Reference (Put in bKash Reference field)</span>
+                      <span class="p2p-field-val" id="bkash-ref-copy">ORD-1001</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="bkash-ref-copy">📋 Copy</button>
+                  </div>
                 </div>
-                <button type="button" id="bkash-init-btn" class="mfs-action-btn bkash-btn">
-                  <span>Proceed with bKash &rarr;</span>
-                  <span id="bkash-init-spinner" class="spinner-small hidden"></span>
+                <div class="observer-live-badge">
+                  <span class="observer-pulse-dot"></span>
+                  <span>Automated SMS Banking Observer Active &bull; Instant Attribution</span>
+                </div>
+              </div>
+
+              <!-- P2P Verification Form -->
+              <div class="mfs-security-box bkash-box">
+                <span class="p2p-step-badge">STEP 2: VERIFY TRANSACTION ID</span>
+                <p class="mfs-instruction">After sending, enter your sender phone number and the 10-character TrxID received in your bKash SMS:</p>
+                <div class="mfs-grid">
+                  <div>
+                    <label class="form-sublabel">Your bKash Phone Number</label>
+                    <input type="tel" id="bkash-sender-phone" placeholder="01XXXXXXXXX" maxlength="11">
+                  </div>
+                  <div>
+                    <label class="form-sublabel">bKash Transaction ID (TrxID)</label>
+                    <input type="text" id="bkash-trxid-input" placeholder="e.g. 9A8B7C6D5E" maxlength="30" style="text-transform: uppercase;">
+                  </div>
+                </div>
+                <div class="mfs-button-row">
+                  <button type="button" id="bkash-p2p-verify-btn" class="mfs-action-btn bkash-btn">
+                    <span>Verify & Complete bKash Payment &rarr;</span>
+                    <span id="bkash-p2p-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="bkash-p2p-status-msg" class="otp-message"></div>
+              </div>
+
+              <!-- Optional API Toggle -->
+              <div style="margin-top: 14px; text-align: center;">
+                <button type="button" id="toggle-bkash-api-btn" style="background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">
+                  Switch to Merchant PG Checkout (API Mode)
                 </button>
               </div>
 
-              <!-- bKash OTP & PIN Drawer -->
-              <div id="bkash-otp-drawer" class="mfs-otp-drawer hidden">
-                <div class="mfs-security-box bkash-box">
-                  <h4>bKash Verification & PIN</h4>
-                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your bKash mobile number and your 5-digit bKash PIN:</p>
-                  <div class="mfs-grid">
-                    <div>
-                      <label class="form-sublabel">bKash OTP</label>
-                      <input type="text" id="bkash-otp-input" placeholder="123456" maxlength="6" class="otp-input">
-                    </div>
-                    <div>
-                      <label class="form-sublabel">bKash PIN</label>
-                      <input type="password" id="bkash-pin-input" placeholder="•••••" maxlength="5" class="otp-input">
-                    </div>
+              <!-- bKash Merchant API Drawer (Hidden by default) -->
+              <div id="bkash-api-drawer" class="hidden" style="margin-top: 14px;">
+                <div class="mfs-form" id="bkash-init-form">
+                  <label class="form-label">bKash Merchant Account Number</label>
+                  <div class="mfs-input-wrapper">
+                    <span class="mfs-prefix">🇧🇩 +88</span>
+                    <input type="tel" id="bkash-wallet-input" placeholder="01XXXXXXXXX" maxlength="11">
                   </div>
-                  <div class="mfs-button-row">
-                    <button type="button" id="bkash-confirm-btn" class="mfs-action-btn bkash-btn">
-                      <span>Confirm bKash Payment</span>
-                      <span id="bkash-confirm-spinner" class="spinner-small hidden"></span>
-                    </button>
+                  <button type="button" id="bkash-init-btn" class="mfs-action-btn bkash-btn">
+                    <span>Proceed with bKash API &rarr;</span>
+                    <span id="bkash-init-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="bkash-otp-drawer" class="mfs-otp-drawer hidden">
+                  <div class="mfs-security-box bkash-box">
+                    <h4>bKash Verification & PIN</h4>
+                    <p class="mfs-instruction">Enter OTP and PIN:</p>
+                    <div class="mfs-grid">
+                      <div>
+                        <label class="form-sublabel">bKash OTP</label>
+                        <input type="text" id="bkash-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                      </div>
+                      <div>
+                        <label class="form-sublabel">bKash PIN</label>
+                        <input type="password" id="bkash-pin-input" placeholder="•••••" maxlength="5" class="otp-input">
+                      </div>
+                    </div>
+                    <div class="mfs-button-row">
+                      <button type="button" id="bkash-confirm-btn" class="mfs-action-btn bkash-btn">
+                        <span>Confirm bKash Payment</span>
+                        <span id="bkash-confirm-spinner" class="spinner-small hidden"></span>
+                      </button>
+                    </div>
+                    <div id="bkash-error-msg" class="otp-message"></div>
                   </div>
-                  <div id="bkash-error-msg" class="otp-message"></div>
                 </div>
               </div>
             </div>
@@ -285,8 +349,8 @@
               <div class="panel-header nagad-header">
                 <div class="mfs-logo nagad-logo">Nagad</div>
                 <div>
-                  <h3>Nagad Digital Financial Service</h3>
-                  <p class="panel-desc">Pay securely using Bangladesh Post Office's Nagad mobile account.</p>
+                  <h3>Nagad Peer-to-Peer & SMS Observer</h3>
+                  <p class="panel-desc">Direct Bangladesh Post Office Nagad wallet transfer with automated SMS verification.</p>
                 </div>
               </div>
 
@@ -302,40 +366,104 @@
                 <span class="fx-rate-note" id="nagad-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
               </div>
 
-              <div class="mfs-form" id="nagad-init-form">
-                <label class="form-label">Nagad Account Number</label>
-                <div class="mfs-input-wrapper">
-                  <span class="mfs-prefix">🇧🇩 +88</span>
-                  <input type="tel" id="nagad-wallet-input" placeholder="01XXXXXXXXX" value="01811000222" maxlength="11">
+              <!-- P2P Send Money Instructions -->
+              <div class="p2p-instructions-box nagad-p2p">
+                <span class="p2p-step-badge">STEP 1: SEND MONEY FROM NAGAD APP</span>
+                <p class="mfs-instruction">Open your Nagad app, choose <strong>Send Money</strong>, and transfer the exact amount to the personal merchant wallet below:</p>
+                <div class="p2p-detail-grid">
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Merchant Nagad Number</span>
+                      <span class="p2p-field-val" id="nagad-receiver-display">01XXXXXXXXX</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="nagad-receiver-display">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Exact Payable Amount</span>
+                      <span class="p2p-field-val" id="nagad-amount-copy">৳ 3,062</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="nagad-amount-copy">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card" style="grid-column: 1 / -1;">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Counter / Order Reference</span>
+                      <span class="p2p-field-val" id="nagad-ref-copy">ORD-1001</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="nagad-ref-copy">📋 Copy</button>
+                  </div>
                 </div>
-                <button type="button" id="nagad-init-btn" class="mfs-action-btn nagad-btn">
-                  <span>Proceed with Nagad &rarr;</span>
-                  <span id="nagad-init-spinner" class="spinner-small hidden"></span>
+                <div class="observer-live-badge">
+                  <span class="observer-pulse-dot"></span>
+                  <span>Automated SMS Banking Observer Active &bull; Instant Attribution</span>
+                </div>
+              </div>
+
+              <!-- P2P Verification Form -->
+              <div class="mfs-security-box nagad-box">
+                <span class="p2p-step-badge">STEP 2: VERIFY TRANSACTION ID</span>
+                <p class="mfs-instruction">After sending, enter your sender phone number and the 8-character TxnID received in your Nagad SMS:</p>
+                <div class="mfs-grid">
+                  <div>
+                    <label class="form-sublabel">Your Nagad Phone Number</label>
+                    <input type="tel" id="nagad-sender-phone" placeholder="01XXXXXXXXX" maxlength="11">
+                  </div>
+                  <div>
+                    <label class="form-sublabel">Nagad Transaction ID (TxnID)</label>
+                    <input type="text" id="nagad-trxid-input" placeholder="e.g. 7K9M2L4P" maxlength="30" style="text-transform: uppercase;">
+                  </div>
+                </div>
+                <div class="mfs-button-row">
+                  <button type="button" id="nagad-p2p-verify-btn" class="mfs-action-btn nagad-btn">
+                    <span>Verify & Complete Nagad Payment &rarr;</span>
+                    <span id="nagad-p2p-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="nagad-p2p-status-msg" class="otp-message"></div>
+              </div>
+
+              <!-- Optional API Toggle -->
+              <div style="margin-top: 14px; text-align: center;">
+                <button type="button" id="toggle-nagad-api-btn" style="background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">
+                  Switch to Merchant PG Checkout (API Mode)
                 </button>
               </div>
 
-              <!-- Nagad OTP & PIN Drawer -->
-              <div id="nagad-otp-drawer" class="mfs-otp-drawer hidden">
-                <div class="mfs-security-box nagad-box">
-                  <h4>Nagad Verification & PIN</h4>
-                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your Nagad mobile number and your 4-digit Nagad PIN:</p>
-                  <div class="mfs-grid">
-                    <div>
-                      <label class="form-sublabel">Nagad OTP</label>
-                      <input type="text" id="nagad-otp-input" placeholder="123456" maxlength="6" class="otp-input">
-                    </div>
-                    <div>
-                      <label class="form-sublabel">Nagad PIN</label>
-                      <input type="password" id="nagad-pin-input" placeholder="••••" maxlength="4" class="otp-input">
-                    </div>
+              <!-- Nagad Merchant API Drawer (Hidden by default) -->
+              <div id="nagad-api-drawer" class="hidden" style="margin-top: 14px;">
+                <div class="mfs-form" id="nagad-init-form">
+                  <label class="form-label">Nagad Account Number</label>
+                  <div class="mfs-input-wrapper">
+                    <span class="mfs-prefix">🇧🇩 +88</span>
+                    <input type="tel" id="nagad-wallet-input" placeholder="01XXXXXXXXX" maxlength="11">
                   </div>
-                  <div class="mfs-button-row">
-                    <button type="button" id="nagad-confirm-btn" class="mfs-action-btn nagad-btn">
-                      <span>Confirm Nagad Payment</span>
-                      <span id="nagad-confirm-spinner" class="spinner-small hidden"></span>
-                    </button>
+                  <button type="button" id="nagad-init-btn" class="mfs-action-btn nagad-btn">
+                    <span>Proceed with Nagad API &rarr;</span>
+                    <span id="nagad-init-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="nagad-otp-drawer" class="mfs-otp-drawer hidden">
+                  <div class="mfs-security-box nagad-box">
+                    <h4>Nagad Verification & PIN</h4>
+                    <p class="mfs-instruction">Enter OTP and PIN:</p>
+                    <div class="mfs-grid">
+                      <div>
+                        <label class="form-sublabel">Nagad OTP</label>
+                        <input type="text" id="nagad-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                      </div>
+                      <div>
+                        <label class="form-sublabel">Nagad PIN</label>
+                        <input type="password" id="nagad-pin-input" placeholder="••••" maxlength="4" class="otp-input">
+                      </div>
+                    </div>
+                    <div class="mfs-button-row">
+                      <button type="button" id="nagad-confirm-btn" class="mfs-action-btn nagad-btn">
+                        <span>Confirm Nagad Payment</span>
+                        <span id="nagad-confirm-spinner" class="spinner-small hidden"></span>
+                      </button>
+                    </div>
+                    <div id="nagad-error-msg" class="otp-message"></div>
                   </div>
-                  <div id="nagad-error-msg" class="otp-message"></div>
                 </div>
               </div>
             </div>
@@ -347,8 +475,8 @@
               <div class="panel-header rocket-header">
                 <div class="mfs-logo rocket-logo">Rocket</div>
                 <div>
-                  <h3>DBBL Rocket Mobile Banking</h3>
-                  <p class="panel-desc">Pay using Dutch-Bangla Bank's Rocket 12-digit mobile banking account.</p>
+                  <h3>DBBL Rocket Peer-to-Peer & SMS Observer</h3>
+                  <p class="panel-desc">Direct Dutch-Bangla Bank mobile wallet transfer with automated SMS reconciliation.</p>
                 </div>
               </div>
 
@@ -364,40 +492,104 @@
                 <span class="fx-rate-note" id="rocket-rate-note">Rate: 1 USD ≈ 122.50 BDT</span>
               </div>
 
-              <div class="mfs-form" id="rocket-init-form">
-                <label class="form-label">Rocket 12-Digit Account (Mobile + Check Digit)</label>
-                <div class="mfs-input-wrapper">
-                  <span class="mfs-prefix">🇧🇩 +88</span>
-                  <input type="tel" id="rocket-wallet-input" placeholder="01XXXXXXXXXX" value="019110003331" maxlength="12">
+              <!-- P2P Send Money Instructions -->
+              <div class="p2p-instructions-box rocket-p2p">
+                <span class="p2p-step-badge">STEP 1: SEND MONEY FROM ROCKET APP</span>
+                <p class="mfs-instruction">Open your Rocket app, choose <strong>Send Money</strong>, and transfer to the personal merchant 12-digit account below:</p>
+                <div class="p2p-detail-grid">
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Merchant Rocket Number (12 Digits)</span>
+                      <span class="p2p-field-val" id="rocket-receiver-display">01XXXXXXXXXX</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="rocket-receiver-display">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Exact Payable Amount</span>
+                      <span class="p2p-field-val" id="rocket-amount-copy">৳ 3,062</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="rocket-amount-copy">📋 Copy</button>
+                  </div>
+                  <div class="p2p-field-card" style="grid-column: 1 / -1;">
+                    <div class="p2p-field-info">
+                      <span class="p2p-field-label">Counter / Order Reference</span>
+                      <span class="p2p-field-val" id="rocket-ref-copy">ORD-1001</span>
+                    </div>
+                    <button type="button" class="btn-copy" data-copy-target="rocket-ref-copy">📋 Copy</button>
+                  </div>
                 </div>
-                <button type="button" id="rocket-init-btn" class="mfs-action-btn rocket-btn">
-                  <span>Proceed with Rocket &rarr;</span>
-                  <span id="rocket-init-spinner" class="spinner-small hidden"></span>
+                <div class="observer-live-badge">
+                  <span class="observer-pulse-dot"></span>
+                  <span>Automated SMS Banking Observer Active &bull; Instant Attribution</span>
+                </div>
+              </div>
+
+              <!-- P2P Verification Form -->
+              <div class="mfs-security-box rocket-box">
+                <span class="p2p-step-badge">STEP 2: VERIFY TRANSACTION ID</span>
+                <p class="mfs-instruction">After sending, enter your sender Rocket account and the TxnId received in your Rocket SMS:</p>
+                <div class="mfs-grid">
+                  <div>
+                    <label class="form-sublabel">Your Rocket Account (12 Digits)</label>
+                    <input type="tel" id="rocket-sender-phone" placeholder="01XXXXXXXXXX" maxlength="12">
+                  </div>
+                  <div>
+                    <label class="form-sublabel">Rocket Transaction ID (TxnId)</label>
+                    <input type="text" id="rocket-trxid-input" placeholder="e.g. RKT893710" maxlength="30" style="text-transform: uppercase;">
+                  </div>
+                </div>
+                <div class="mfs-button-row">
+                  <button type="button" id="rocket-p2p-verify-btn" class="mfs-action-btn rocket-btn">
+                    <span>Verify & Complete Rocket Payment &rarr;</span>
+                    <span id="rocket-p2p-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="rocket-p2p-status-msg" class="otp-message"></div>
+              </div>
+
+              <!-- Optional API Toggle -->
+              <div style="margin-top: 14px; text-align: center;">
+                <button type="button" id="toggle-rocket-api-btn" style="background: none; border: none; color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">
+                  Switch to Merchant PG Checkout (API Mode)
                 </button>
               </div>
 
-              <!-- Rocket OTP & PIN Drawer -->
-              <div id="rocket-otp-drawer" class="mfs-otp-drawer hidden">
-                <div class="mfs-security-box rocket-box">
-                  <h4>Rocket Verification & PIN</h4>
-                  <p class="mfs-instruction">Enter the 6-digit OTP sent to your Rocket mobile number and your 4-digit Rocket PIN:</p>
-                  <div class="mfs-grid">
-                    <div>
-                      <label class="form-sublabel">Rocket OTP</label>
-                      <input type="text" id="rocket-otp-input" placeholder="123456" maxlength="6" class="otp-input">
-                    </div>
-                    <div>
-                      <label class="form-sublabel">Rocket PIN</label>
-                      <input type="password" id="rocket-pin-input" placeholder="••••" maxlength="4" class="otp-input">
-                    </div>
+              <!-- Rocket Merchant API Drawer (Hidden by default) -->
+              <div id="rocket-api-drawer" class="hidden" style="margin-top: 14px;">
+                <div class="mfs-form" id="rocket-init-form">
+                  <label class="form-label">Rocket 12-Digit Account</label>
+                  <div class="mfs-input-wrapper">
+                    <span class="mfs-prefix">🇧🇩 +88</span>
+                    <input type="tel" id="rocket-wallet-input" placeholder="01XXXXXXXXXX" maxlength="12">
                   </div>
-                  <div class="mfs-button-row">
-                    <button type="button" id="rocket-confirm-btn" class="mfs-action-btn rocket-btn">
-                      <span>Confirm Rocket Payment</span>
-                      <span id="rocket-confirm-spinner" class="spinner-small hidden"></span>
-                    </button>
+                  <button type="button" id="rocket-init-btn" class="mfs-action-btn rocket-btn">
+                    <span>Proceed with Rocket API &rarr;</span>
+                    <span id="rocket-init-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="rocket-otp-drawer" class="mfs-otp-drawer hidden">
+                  <div class="mfs-security-box rocket-box">
+                    <h4>Rocket Verification & PIN</h4>
+                    <p class="mfs-instruction">Enter OTP and PIN:</p>
+                    <div class="mfs-grid">
+                      <div>
+                        <label class="form-sublabel">Rocket OTP</label>
+                        <input type="text" id="rocket-otp-input" placeholder="123456" maxlength="6" class="otp-input">
+                      </div>
+                      <div>
+                        <label class="form-sublabel">Rocket PIN</label>
+                        <input type="password" id="rocket-pin-input" placeholder="••••" maxlength="4" class="otp-input">
+                      </div>
+                    </div>
+                    <div class="mfs-button-row">
+                      <button type="button" id="rocket-confirm-btn" class="mfs-action-btn rocket-btn">
+                        <span>Confirm Rocket Payment</span>
+                        <span id="rocket-confirm-spinner" class="spinner-small hidden"></span>
+                      </button>
+                    </div>
+                    <div id="rocket-error-msg" class="otp-message"></div>
                   </div>
-                  <div id="rocket-error-msg" class="otp-message"></div>
                 </div>
               </div>
             </div>
@@ -409,8 +601,8 @@
               <div class="panel-header">
                 <div class="method-icon-big">⚡</div>
                 <div>
-                  <h3>UPI & Indian Banking Gateway</h3>
-                  <p class="panel-desc">Zero-fee instant peer-to-merchant UPI payments via PhonePe, Google Pay, Paytm, and BHIM QR.</p>
+                  <h3>UPI Peer-to-Peer & Banking Observer</h3>
+                  <p class="panel-desc">Zero-fee instant peer-to-merchant UPI payments via PhonePe, Google Pay, Paytm, CRED & BHIM.</p>
                 </div>
               </div>
 
@@ -420,18 +612,43 @@
                   <span id="upi-summary-amount" class="highlight-val">₹ 2,050.00 INR</span>
                 </div>
                 <div class="summary-line">
-                  <span>Supported Apps:</span>
-                  <span>Google Pay, PhonePe, Paytm, CRED, BHIM</span>
+                  <span>Merchant UPI ID (VPA):</span>
+                  <span id="upi-vpa-display" class="statement-brand">youpi@upi</span>
+                  <button type="button" class="btn-copy" data-copy-target="upi-vpa-display">📋 Copy VPA</button>
                 </div>
               </div>
 
+              <!-- UPI UTR Verification -->
+              <div class="mfs-security-box upi-box" style="margin-bottom: 16px;">
+                <span class="p2p-step-badge">DIRECT UPI VERIFICATION (UTR / BANK REFERENCE)</span>
+                <p class="mfs-instruction">Transfer via any UPI app to the VPA above, then enter the 12-digit UTR bank reference number:</p>
+                <div class="mfs-grid">
+                  <div>
+                    <label class="form-sublabel">Sender UPI ID or Mobile</label>
+                    <input type="text" id="upi-sender-id" placeholder="yourname@bank or 9876543210">
+                  </div>
+                  <div>
+                    <label class="form-sublabel">12-Digit Bank Reference / UTR</label>
+                    <input type="text" id="upi-utr-input" placeholder="e.g. 123456789012" maxlength="35">
+                  </div>
+                </div>
+                <div class="mfs-button-row">
+                  <button type="button" id="upi-p2p-verify-btn" class="mfs-action-btn upi-btn">
+                    <span>Verify & Complete UPI Payment &rarr;</span>
+                    <span id="upi-p2p-spinner" class="spinner-small hidden"></span>
+                  </button>
+                </div>
+                <div id="upi-p2p-status-msg" class="otp-message"></div>
+              </div>
+
               <a href="http://localhost:5000" target="_blank" class="pay-button upi-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span>Launch UPI Sovereign Checkout &rarr;</span>
+                <span>Launch Dynamic QR Stand & Sovereign Checkout &rarr;</span>
               </a>
 
-              <p class="privacy-small-text">
-                Operates through YOUPI PG sovereign banking observer engine with automatic SMS and Gmail reconciliation.
-              </p>
+              <div class="observer-live-badge" style="margin-top: 14px;">
+                <span class="observer-pulse-dot"></span>
+                <span>YOUPI PG Sovereign Banking Observer active via SMS & Gmail parsers</span>
+              </div>
             </div>
           </div>
 
@@ -492,6 +709,38 @@
                     <span>💾 Save & Link Receiving Card to Backend</span>
                   </button>
                   <div id="payout-save-msg" class="otp-message hidden"></div>
+                </div>
+              </div>
+
+              <!-- Merchant Receiving Wallets (bKash / Nagad / Rocket / UPI) -->
+              <div class="payout-card-box">
+                <h3>📱 Configure Peer-to-Peer Receiving Wallets</h3>
+                <p class="section-desc">Enter your personal phone numbers and UPI ID. Customers choosing bKash, Nagad, Rocket, or UPI will transfer funds directly to these personal accounts with zero gateway fees!</p>
+
+                <div class="payout-form-grid">
+                  <div class="form-group">
+                    <label for="settings-bkash-number">bKash Receiving Number (Personal/Agent)</label>
+                    <input type="tel" id="settings-bkash-number" placeholder="017XXXXXXXX" maxlength="11" />
+                  </div>
+                  <div class="form-group">
+                    <label for="settings-nagad-number">Nagad Receiving Number (Personal/Uddokta)</label>
+                    <input type="tel" id="settings-nagad-number" placeholder="018XXXXXXXX" maxlength="11" />
+                  </div>
+                  <div class="form-group">
+                    <label for="settings-rocket-number">Rocket Receiving Number (12 Digits)</label>
+                    <input type="tel" id="settings-rocket-number" placeholder="019XXXXXXXXX" maxlength="12" />
+                  </div>
+                  <div class="form-group">
+                    <label for="settings-upi-vpa">UPI Payee VPA / ID</label>
+                    <input type="text" id="settings-upi-vpa" placeholder="yourname@okhdfcbank" />
+                  </div>
+                </div>
+
+                <div class="payout-actions">
+                  <button type="button" id="save-mfs-settings-btn" class="pay-button payout-btn">
+                    <span>💾 Save P2P Receiving Wallets</span>
+                  </button>
+                  <div id="mfs-save-msg" class="otp-message hidden"></div>
                 </div>
               </div>
 

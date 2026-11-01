@@ -390,6 +390,52 @@ describe('Universal Payment Gateway Tests (Card, PayPal, bKash, Nagad, Rocket, U
   });
 
   // ============================================
+  // 9. Peer-to-Peer (P2P) & SMS Observer Integration Tests
+  // ============================================
+  test('P2P MFS Settings: GET & POST /api/mfs-settings configures receiving wallets', async () => {
+    const postRes = await makeRequest('POST', '/api/mfs-settings', {
+      bkashNumber: '01711223344',
+      nagadNumber: '01811223344',
+      rocketNumber: '019112233441',
+      upiVpa: 'merchant@upi'
+    });
+    assert.equal(postRes.status, 200);
+    assert.equal(postRes.body.success, true);
+    assert.equal(postRes.body.mfsReceiving.bkashNumber, '01711223344');
+
+    const getRes = await makeRequest('GET', '/api/mfs-settings');
+    assert.equal(getRes.status, 200);
+    assert.equal(getRes.body.mfsReceiving.bkashNumber, '01711223344');
+    assert.equal(getRes.body.mfsReceiving.nagadNumber, '01811223344');
+  });
+
+  test('SMS Observer: POST /api/observer/sms parses bKash credit notification and enables instant P2P verification', async () => {
+    const smsRes = await makeRequest('POST', '/api/observer/sms', {
+      text: 'You have received Tk 2,500.00 from 01711000111. Ref Order77. Fee Tk 0.00. Balance Tk 15,450.00. TrxID 8A7B6C5D4E at 01/11/2026 15:30',
+      sender: 'bKash'
+    });
+    assert.equal(smsRes.status, 200);
+    assert.equal(smsRes.body.success, true);
+    assert.equal(smsRes.body.parsed.amount, '2500.00');
+    assert.equal(smsRes.body.parsed.bankReferenceNumber, '8A7B6C5D4E');
+
+    // Customer submits TrxID in P2P form
+    const verifyRes = await makeRequest('POST', '/api/p2p/verify-trxid', {
+      method: 'bkash',
+      orderId: 'ORD-TEST-77',
+      trxId: '8A7B6C5D4E',
+      customerPhone: '01711000111',
+      amountBDT: 2500
+    });
+    assert.equal(verifyRes.status, 200);
+    assert.equal(verifyRes.body.success, true);
+    assert.equal(verifyRes.body.status, 'succeeded');
+    assert.equal(verifyRes.body.verifiedBy, 'AUTHENTIC_SMS_OBSERVER');
+    assert.ok(verifyRes.body.autoPayout);
+    assert.equal(verifyRes.body.autoPayout.status, 'COMPLETED');
+  });
+
+  // ============================================
   // 10. Static Frontend Serving
   // ============================================
   test('GET / serves HTML with Card, PayPal, bKash, Nagad, Rocket and UPI tabs', async () => {

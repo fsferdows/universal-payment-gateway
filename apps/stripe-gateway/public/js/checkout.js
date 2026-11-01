@@ -215,6 +215,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (rocketBdtAmt) rocketBdtAmt.textContent = formattedBdt;
     if (rocketRateNote) rocketRateNote.textContent = rateText;
 
+    // P2P Copy Fields
+    const bkashAmountCopy = document.getElementById('bkash-amount-copy');
+    const nagadAmountCopy = document.getElementById('nagad-amount-copy');
+    const rocketAmountCopy = document.getElementById('rocket-amount-copy');
+    if (bkashAmountCopy) bkashAmountCopy.textContent = `৳ ${bdtAmount.toLocaleString('en-US')}`;
+    if (nagadAmountCopy) nagadAmountCopy.textContent = `৳ ${bdtAmount.toLocaleString('en-US')}`;
+    if (rocketAmountCopy) rocketAmountCopy.textContent = `৳ ${bdtAmount.toLocaleString('en-US')}`;
+
+    const bkashRefCopy = document.getElementById('bkash-ref-copy');
+    const nagadRefCopy = document.getElementById('nagad-ref-copy');
+    const rocketRefCopy = document.getElementById('rocket-ref-copy');
+    if (bkashRefCopy) bkashRefCopy.textContent = currentOrderId;
+    if (nagadRefCopy) nagadRefCopy.textContent = currentOrderId;
+    if (rocketRefCopy) rocketRefCopy.textContent = currentOrderId;
+
     // UPI Box (INR)
     const rateToINR = (fxRates[currency] || 122.50) / (fxRates['inr'] || 1.46);
     const inrAmount = (val * (currency === 'inr' ? 1 : (currency === 'usd' ? 86.50 : rateToINR))).toFixed(2);
@@ -430,8 +445,105 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================
-  // 4. bKash PAYMENT INTEGRATION
+  // 3.1 1-CLICK CLIPBOARD COPY HANDLERS
   // ============================================
+  document.querySelectorAll('.btn-copy').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.copyTarget;
+      const el = document.getElementById(targetId);
+      if (el) {
+        const text = el.textContent.trim().replace(/^৳\s*/, '').replace(/^₹\s*/, '');
+        navigator.clipboard.writeText(text).then(() => {
+          const original = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => btn.textContent = original, 2000);
+        }).catch(() => {
+          const original = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => btn.textContent = original, 2000);
+        });
+      }
+    });
+  });
+
+  // API Mode Drawers Toggle
+  document.getElementById('toggle-bkash-api-btn')?.addEventListener('click', () => {
+    document.getElementById('bkash-api-drawer')?.classList.toggle('hidden');
+  });
+  document.getElementById('toggle-nagad-api-btn')?.addEventListener('click', () => {
+    document.getElementById('nagad-api-drawer')?.classList.toggle('hidden');
+  });
+  document.getElementById('toggle-rocket-api-btn')?.addEventListener('click', () => {
+    document.getElementById('rocket-api-drawer')?.classList.toggle('hidden');
+  });
+
+  // ============================================
+  // 4. bKash PEER-TO-PEER (P2P) & OBSERVER VERIFICATION
+  // ============================================
+  const bkashP2pBtn = document.getElementById('bkash-p2p-verify-btn');
+  const bkashP2pSpinner = document.getElementById('bkash-p2p-spinner');
+  const bkashP2pStatus = document.getElementById('bkash-p2p-status-msg');
+  const bkashSenderPhone = document.getElementById('bkash-sender-phone');
+  const bkashTrxIdInput = document.getElementById('bkash-trxid-input');
+
+  bkashP2pBtn?.addEventListener('click', async () => {
+    const senderPhone = bkashSenderPhone?.value.trim() || '';
+    const trxId = bkashTrxIdInput?.value.trim().toUpperCase() || '';
+    const currency = (currencySelect.value || 'usd').toLowerCase();
+    const val = parseFloat(amountInput.value) || 0;
+    const rateToBDT = fxRates[currency] || 122.50;
+    const bdtAmount = Math.round(val * rateToBDT);
+
+    if (!trxId || trxId.length < 6) {
+      if (bkashP2pStatus) {
+        bkashP2pStatus.textContent = 'Please enter a valid 10-character bKash TrxID (e.g. 9A8B7C6D5E).';
+        bkashP2pStatus.className = 'otp-message error';
+      }
+      bkashTrxIdInput?.focus();
+      return;
+    }
+
+    bkashP2pBtn.disabled = true;
+    bkashP2pSpinner?.classList.remove('hidden');
+    if (bkashP2pStatus) {
+      bkashP2pStatus.textContent = 'Verifying bKash SMS Banking Observation...';
+      bkashP2pStatus.className = 'otp-message';
+    }
+
+    try {
+      const res = await fetch('/api/p2p/verify-trxid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'bkash',
+          orderId: currentOrderId,
+          trxId,
+          customerPhone: senderPhone,
+          amountBDT: bdtAmount
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+      if (bkashP2pStatus) {
+        bkashP2pStatus.textContent = '✅ Payment Verified by Banking Observer! Redirecting...';
+        bkashP2pStatus.className = 'otp-message success';
+      }
+
+      setTimeout(() => {
+        window.location.href = `/success.html?method=bkash&order_id=${encodeURIComponent(currentOrderId)}&amount=${bdtAmount}&currency=BDT&trx_id=${encodeURIComponent(data.trxID)}&wallet=${encodeURIComponent(senderPhone)}`;
+      }, 700);
+    } catch (err) {
+      if (bkashP2pStatus) {
+        bkashP2pStatus.textContent = err.message;
+        bkashP2pStatus.className = 'otp-message error';
+      }
+      bkashP2pBtn.disabled = false;
+      bkashP2pSpinner?.classList.add('hidden');
+    }
+  });
+
+  // bKash Merchant API Handlers
   bkashInitBtn?.addEventListener('click', async () => {
     const customerWallet = bkashWalletInput.value.trim();
     const amount = parseFloat(amountInput.value);
@@ -512,8 +624,72 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================
-  // 5. NAGAD PAYMENT INTEGRATION
+  // 5. NAGAD PEER-TO-PEER (P2P) & OBSERVER VERIFICATION
   // ============================================
+  const nagadP2pBtn = document.getElementById('nagad-p2p-verify-btn');
+  const nagadP2pSpinner = document.getElementById('nagad-p2p-spinner');
+  const nagadP2pStatus = document.getElementById('nagad-p2p-status-msg');
+  const nagadSenderPhone = document.getElementById('nagad-sender-phone');
+  const nagadTrxIdInput = document.getElementById('nagad-trxid-input');
+
+  nagadP2pBtn?.addEventListener('click', async () => {
+    const senderPhone = nagadSenderPhone?.value.trim() || '';
+    const trxId = nagadTrxIdInput?.value.trim().toUpperCase() || '';
+    const currency = (currencySelect.value || 'usd').toLowerCase();
+    const val = parseFloat(amountInput.value) || 0;
+    const rateToBDT = fxRates[currency] || 122.50;
+    const bdtAmount = Math.round(val * rateToBDT);
+
+    if (!trxId || trxId.length < 6) {
+      if (nagadP2pStatus) {
+        nagadP2pStatus.textContent = 'Please enter a valid 8-character Nagad TxnID (e.g. 7K9M2L4P).';
+        nagadP2pStatus.className = 'otp-message error';
+      }
+      nagadTrxIdInput?.focus();
+      return;
+    }
+
+    nagadP2pBtn.disabled = true;
+    nagadP2pSpinner?.classList.remove('hidden');
+    if (nagadP2pStatus) {
+      nagadP2pStatus.textContent = 'Verifying Nagad SMS Banking Observation...';
+      nagadP2pStatus.className = 'otp-message';
+    }
+
+    try {
+      const res = await fetch('/api/p2p/verify-trxid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'nagad',
+          orderId: currentOrderId,
+          trxId,
+          customerPhone: senderPhone,
+          amountBDT: bdtAmount
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+      if (nagadP2pStatus) {
+        nagadP2pStatus.textContent = '✅ Payment Verified by Banking Observer! Redirecting...';
+        nagadP2pStatus.className = 'otp-message success';
+      }
+
+      setTimeout(() => {
+        window.location.href = `/success.html?method=nagad&order_id=${encodeURIComponent(currentOrderId)}&amount=${bdtAmount}&currency=BDT&trx_id=${encodeURIComponent(data.trxID)}&wallet=${encodeURIComponent(senderPhone)}`;
+      }, 700);
+    } catch (err) {
+      if (nagadP2pStatus) {
+        nagadP2pStatus.textContent = err.message;
+        nagadP2pStatus.className = 'otp-message error';
+      }
+      nagadP2pBtn.disabled = false;
+      nagadP2pSpinner?.classList.add('hidden');
+    }
+  });
+
+  // Nagad Merchant API Handlers
   nagadInitBtn?.addEventListener('click', async () => {
     const customerWallet = nagadWalletInput.value.trim();
     const amount = parseFloat(amountInput.value);
@@ -594,8 +770,72 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ============================================
-  // 6. ROCKET PAYMENT INTEGRATION
+  // 6. ROCKET PEER-TO-PEER (P2P) & OBSERVER VERIFICATION
   // ============================================
+  const rocketP2pBtn = document.getElementById('rocket-p2p-verify-btn');
+  const rocketP2pSpinner = document.getElementById('rocket-p2p-spinner');
+  const rocketP2pStatus = document.getElementById('rocket-p2p-status-msg');
+  const rocketSenderPhone = document.getElementById('rocket-sender-phone');
+  const rocketTrxIdInput = document.getElementById('rocket-trxid-input');
+
+  rocketP2pBtn?.addEventListener('click', async () => {
+    const senderPhone = rocketSenderPhone?.value.trim() || '';
+    const trxId = rocketTrxIdInput?.value.trim().toUpperCase() || '';
+    const currency = (currencySelect.value || 'usd').toLowerCase();
+    const val = parseFloat(amountInput.value) || 0;
+    const rateToBDT = fxRates[currency] || 122.50;
+    const bdtAmount = Math.round(val * rateToBDT);
+
+    if (!trxId || trxId.length < 6) {
+      if (rocketP2pStatus) {
+        rocketP2pStatus.textContent = 'Please enter a valid Rocket TxnId (e.g. RKT893710).';
+        rocketP2pStatus.className = 'otp-message error';
+      }
+      rocketTrxIdInput?.focus();
+      return;
+    }
+
+    rocketP2pBtn.disabled = true;
+    rocketP2pSpinner?.classList.remove('hidden');
+    if (rocketP2pStatus) {
+      rocketP2pStatus.textContent = 'Verifying Rocket SMS Banking Observation...';
+      rocketP2pStatus.className = 'otp-message';
+    }
+
+    try {
+      const res = await fetch('/api/p2p/verify-trxid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'rocket',
+          orderId: currentOrderId,
+          trxId,
+          customerPhone: senderPhone,
+          amountBDT: bdtAmount
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+      if (rocketP2pStatus) {
+        rocketP2pStatus.textContent = '✅ Payment Verified by Banking Observer! Redirecting...';
+        rocketP2pStatus.className = 'otp-message success';
+      }
+
+      setTimeout(() => {
+        window.location.href = `/success.html?method=rocket&order_id=${encodeURIComponent(currentOrderId)}&amount=${bdtAmount}&currency=BDT&trx_id=${encodeURIComponent(data.trxID)}&wallet=${encodeURIComponent(senderPhone)}`;
+      }, 700);
+    } catch (err) {
+      if (rocketP2pStatus) {
+        rocketP2pStatus.textContent = err.message;
+        rocketP2pStatus.className = 'otp-message error';
+      }
+      rocketP2pBtn.disabled = false;
+      rocketP2pSpinner?.classList.add('hidden');
+    }
+  });
+
+  // Rocket Merchant API Handlers
   rocketInitBtn?.addEventListener('click', async () => {
     const customerWallet = rocketWalletInput.value.trim();
     const amount = parseFloat(amountInput.value);
@@ -672,6 +912,72 @@ document.addEventListener('DOMContentLoaded', async () => {
       rocketErrorMsg.className = 'otp-message error';
       rocketConfirmBtn.disabled = false;
       rocketConfirmSpinner?.classList.add('hidden');
+    }
+  });
+
+  // ============================================
+  // 6.1 UPI PEER-TO-PEER (P2P) & UTR VERIFICATION
+  // ============================================
+  const upiP2pBtn = document.getElementById('upi-p2p-verify-btn');
+  const upiP2pSpinner = document.getElementById('upi-p2p-spinner');
+  const upiP2pStatus = document.getElementById('upi-p2p-status-msg');
+  const upiSenderId = document.getElementById('upi-sender-id');
+  const upiUtrInput = document.getElementById('upi-utr-input');
+
+  upiP2pBtn?.addEventListener('click', async () => {
+    const senderId = upiSenderId?.value.trim() || '';
+    const utr = upiUtrInput?.value.trim().toUpperCase() || '';
+    const currency = (currencySelect.value || 'usd').toLowerCase();
+    const val = parseFloat(amountInput.value) || 0;
+    const rateToINR = (fxRates[currency] || 122.50) / (fxRates['inr'] || 1.46);
+    const inrAmount = (val * (currency === 'inr' ? 1 : (currency === 'usd' ? 86.50 : rateToINR))).toFixed(2);
+
+    if (!utr || utr.length < 6) {
+      if (upiP2pStatus) {
+        upiP2pStatus.textContent = 'Please enter a valid 12-digit UTR bank reference number.';
+        upiP2pStatus.className = 'otp-message error';
+      }
+      upiUtrInput?.focus();
+      return;
+    }
+
+    upiP2pBtn.disabled = true;
+    upiP2pSpinner?.classList.remove('hidden');
+    if (upiP2pStatus) {
+      upiP2pStatus.textContent = 'Verifying UPI Bank Reference / SMS Observation...';
+      upiP2pStatus.className = 'otp-message';
+    }
+
+    try {
+      const res = await fetch('/api/p2p/verify-trxid', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: 'upi',
+          orderId: currentOrderId,
+          trxId: utr,
+          customerPhone: senderId,
+          amountBDT: inrAmount
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+      if (upiP2pStatus) {
+        upiP2pStatus.textContent = '✅ Payment Verified by Banking Observer! Redirecting...';
+        upiP2pStatus.className = 'otp-message success';
+      }
+
+      setTimeout(() => {
+        window.location.href = `/success.html?method=upi&order_id=${encodeURIComponent(currentOrderId)}&amount=${inrAmount}&currency=INR&trx_id=${encodeURIComponent(data.trxID)}&wallet=${encodeURIComponent(senderId)}`;
+      }, 700);
+    } catch (err) {
+      if (upiP2pStatus) {
+        upiP2pStatus.textContent = err.message;
+        upiP2pStatus.className = 'otp-message error';
+      }
+      upiP2pBtn.disabled = false;
+      upiP2pSpinner?.classList.add('hidden');
     }
   });
 
@@ -1041,8 +1347,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ============================================
+  // MFS & UPI RECEIVING SETTINGS
+  // ============================================
+  async function loadMfsSettings() {
+    try {
+      const res = await fetch('/api/mfs-settings');
+      if (!res.ok) return;
+      const data = await res.json();
+      const mfs = data.mfsReceiving || {};
+
+      const bkashDisplay = document.getElementById('bkash-receiver-display');
+      const nagadDisplay = document.getElementById('nagad-receiver-display');
+      const rocketDisplay = document.getElementById('rocket-receiver-display');
+      const upiDisplay = document.getElementById('upi-vpa-display');
+
+      if (bkashDisplay && mfs.bkashNumber) bkashDisplay.textContent = mfs.bkashNumber;
+      if (nagadDisplay && mfs.nagadNumber) nagadDisplay.textContent = mfs.nagadNumber;
+      if (rocketDisplay && mfs.rocketNumber) rocketDisplay.textContent = mfs.rocketNumber;
+      if (upiDisplay && mfs.upiVpa) upiDisplay.textContent = mfs.upiVpa;
+
+      const sBkash = document.getElementById('settings-bkash-number');
+      const sNagad = document.getElementById('settings-nagad-number');
+      const sRocket = document.getElementById('settings-rocket-number');
+      const sUpi = document.getElementById('settings-upi-vpa');
+
+      if (sBkash && mfs.bkashNumber) sBkash.value = mfs.bkashNumber;
+      if (sNagad && mfs.nagadNumber) sNagad.value = mfs.nagadNumber;
+      if (sRocket && mfs.rocketNumber) sRocket.value = mfs.rocketNumber;
+      if (sUpi && mfs.upiVpa) sUpi.value = mfs.upiVpa;
+    } catch (e) {
+      console.warn('Failed to load MFS settings:', e);
+    }
+  }
+
+  const saveMfsBtn = document.getElementById('save-mfs-settings-btn');
+  const mfsSaveMsg = document.getElementById('mfs-save-msg');
+
+  saveMfsBtn?.addEventListener('click', async () => {
+    const bkashNumber = document.getElementById('settings-bkash-number')?.value.trim();
+    const nagadNumber = document.getElementById('settings-nagad-number')?.value.trim();
+    const rocketNumber = document.getElementById('settings-rocket-number')?.value.trim();
+    const upiVpa = document.getElementById('settings-upi-vpa')?.value.trim();
+
+    try {
+      saveMfsBtn.disabled = true;
+      const res = await fetch('/api/mfs-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bkashNumber, nagadNumber, rocketNumber, upiVpa })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save MFS settings');
+
+      if (mfsSaveMsg) {
+        mfsSaveMsg.textContent = '✅ P2P receiving wallets updated successfully!';
+        mfsSaveMsg.className = 'otp-message success';
+        mfsSaveMsg.classList.remove('hidden');
+      }
+      await loadMfsSettings();
+    } catch (err) {
+      if (mfsSaveMsg) {
+        mfsSaveMsg.textContent = err.message;
+        mfsSaveMsg.className = 'otp-message error';
+        mfsSaveMsg.classList.remove('hidden');
+      }
+    } finally {
+      saveMfsBtn.disabled = false;
+    }
+  });
+
   loadPayoutSettings();
   loadPayoutHistory();
+  loadMfsSettings();
 
   // Initial UI updates
   updateCountryBadge();

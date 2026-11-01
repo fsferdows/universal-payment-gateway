@@ -11,8 +11,24 @@ import { toPaise } from '@youpi/common';
 export function extractIntelligentAmount(text) {
   if (!text || typeof text !== 'string') return null;
 
-  // Pattern 1: Standard currency prefix (e.g. Rs. 20.00, Rs 200, INR 500.00, ₹1,200.50, ₹20)
-  const prefixMatch = text.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i);
+  const normalizedText = text.replace(/\s+/g, ' ');
+
+  // 0. Remove balance mentions (e.g. "Avl Bal Rs 10,000", "Balance Tk 15,450.00")
+  const balancePattern = /(?:(?:avl|avail|available|tot|total|ledger|clear|curr|current|new)(?:\s+(?:bal|balance|limit))?|bal|balance)\b[\s:=-]*(?:(?:rs\.?|inr|tk\.?|taka|bdt|usd|\$|[₹৳])\s*)?\b\d[\d,]{0,15}(?:\.\d{1,2})?/gi;
+  const sanitizedText = normalizedText.replace(balancePattern, ' ').trim();
+
+  // Pattern 0: Direct credit proximity phrases (e.g. "credited with Rs. 500", "received ₹200.00", "Cash In Tk 3,000")
+  const directCreditMatch = sanitizedText.match(/(?:credited\s*(?:with|by|for)?|received|deposit(?:ed)?|cash\s*in)\s*[:=-]?\s*(?:(?:rs\b\.?|inr\b|tk\b\.?|taka\b|bdt\b|usd\b|\$)|[₹৳])?[\s:=-]*([\d,]+(?:\.\d{1,2})?)/i) ||
+    sanitizedText.match(/(?:(?:rs\b\.?|inr\b|tk\b\.?|taka\b|bdt\b|usd\b|\$)|[₹৳])[\s:=-]*([\d,]+(?:\.\d{1,2})?)\s*(?:(?:has\s+been|is)\s+)?(?:credited|received|deposited)/i);
+  if (directCreditMatch && (directCreditMatch[1] || directCreditMatch[2])) {
+    const clean = (directCreditMatch[1] || directCreditMatch[2]).replace(/,/g, '');
+    try {
+      return { amountStr: clean, amountPaise: toPaise(clean) };
+    } catch {}
+  }
+
+  // Pattern 1: Standard currency prefix (e.g. Rs. 20.00, Rs 200, INR 500.00, Tk 3000, ৳500, USD 25.00)
+  const prefixMatch = sanitizedText.match(/(?:(?:rs\b\.?|inr\b|tk\b\.?|taka\b|bdt\b|usd\b|\$)|[₹৳])[\s:=-]*([\d,]+(?:\.\d{1,2})?)/i);
   if (prefixMatch && prefixMatch[1]) {
     const clean = prefixMatch[1].replace(/,/g, '');
     try {
@@ -20,8 +36,8 @@ export function extractIntelligentAmount(text) {
     } catch {}
   }
 
-  // Pattern 2: Standard currency suffix (e.g. 20.00 Rs, 20.00 INR, 20rs, 500 inr)
-  const suffixMatch = text.match(/([\d,]+(?:\.\d{1,2})?)\s*(?:rs\.?|inr|₹)/i);
+  // Pattern 2: Standard currency suffix (e.g. 20.00 Rs, 20.00 INR, 3000 Tk, 25 USD)
+  const suffixMatch = sanitizedText.match(/(?:^|[^\w.])([\d,]+(?:\.\d{1,2})?)[\s:=-]*(?:(?:rs\b\.?|inr\b|tk\b\.?|taka\b|bdt\b|usd\b|\$)|[₹৳])/i);
   if (suffixMatch && suffixMatch[1]) {
     const clean = suffixMatch[1].replace(/,/g, '');
     try {
@@ -30,7 +46,7 @@ export function extractIntelligentAmount(text) {
   }
 
   // Pattern 3: Number adjacent to credit keywords (e.g. "20.00 received", "received 20.00", "credited 20", "20.00 credited")
-  const creditProximityMatch = text.match(/(?:credited|received|deposit|payment|paid|transferred|upi|cr)[\s\w:]*?([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)[\s\w:]*?(?:credited|received|deposit|payment|paid|transferred|upi|cr)/i);
+  const creditProximityMatch = sanitizedText.match(/(?:credited|received|deposit|payment|paid|transferred|upi|cr)[\s\w:]*?([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)[\s\w:]*?(?:credited|received|deposit|payment|paid|transferred|upi|cr)/i);
   if (creditProximityMatch) {
     const rawVal = creditProximityMatch[1] || creditProximityMatch[2];
     if (rawVal) {
@@ -44,7 +60,7 @@ export function extractIntelligentAmount(text) {
   }
 
   // Pattern 4: Standalone decimal currency number (e.g. 20.00, 150.50, 449.00)
-  const standaloneDecimal = text.match(/\b(\d{1,6}\.\d{2})\b/);
+  const standaloneDecimal = sanitizedText.match(/\b(\d{1,6}\.\d{2})\b/);
   if (standaloneDecimal && standaloneDecimal[1]) {
     const clean = standaloneDecimal[1];
     try {
@@ -56,8 +72,8 @@ export function extractIntelligentAmount(text) {
 }
 
 /**
- * Bank and UPI SMS parser for Indian financial institutions:
- * SBI, HDFC, ICICI, Axis, Kotak, PNB, Bank of Baroda, Paytm Payments Bank, etc.
+ * Bank and UPI / MFS SMS parser for:
+ * SBI, HDFC, ICICI, Axis, Kotak, PNB, bKash, Nagad, Rocket, Paytm, PhonePe, GPay, etc.
  */
 export class BankSmsParser {
   /**
@@ -81,13 +97,21 @@ export class BankSmsParser {
     if (!text) return null;
 
     // Check if SMS represents an incoming credit
-    const creditKeywords = /(credited|received|deposit|payment received|payment|upi\/cr|transferred)/i;
+    const creditKeywords = new RegExp(
+      '\\b(?:credited|received|deposit(?:ed)?|cash\\s*in|payment\\s+received|money\\s+received|upi\\/cr' +
+      '|transferred\\s+to\\s+(?:your\\s+)?(?:a\\/c|account|wallet)' +
+      '|payment\\s+of\\s+(?:(?:rs\\b\\.?|inr\\b|tk\\b\\.?|taka\\b|bdt\\b|usd\\b|\\$|[₹৳])\\s*)?[\\d,.]+\\s+(?:has\\s+been\\s+)?made\\s+to\\s+(?:your\\s+)?(?:a\\/c|account|wallet)' +
+      '|added\\s+to\\s+(?:your\\s+)?(?:account|wallet))\\b',
+      'i'
+    );
     if (!creditKeywords.test(text)) {
       return null;
     }
 
     // Ignore pure debits
-    if (/(debited|withdrawn|sent rs|paid rs)/i.test(text) && !/(credited|received|deposit)/i.test(text)) {
+    const debitIdx = text.search(/\b(?:debited|withdrawn|deducted|spent|paid rs|sent rs|cash\s*out)\b/i);
+    const creditIdx = text.search(/\b(?:credited|received|deposit|deposited|cash\s*in)\b/i);
+    if (debitIdx !== -1 && (creditIdx === -1 || debitIdx < creditIdx)) {
       return null;
     }
 
@@ -97,23 +121,28 @@ export class BankSmsParser {
       return null;
     }
 
-    // 2. Extract Bank Reference / UTR / RRN
+    // 2. Extract Bank Reference / UTR / RRN (including FamPay, bKash TrxID, Nagad TxnID, Rocket TxnId)
     let bankRef;
-    const refMatch = text.match(/(?:utr|ref(?:\s*no)?|txn(?:\s*id)?|rrn)[:\s#]+([a-zA-Z0-9\-_]{6,35})/i);
-    if (refMatch && refMatch[1]) {
-      bankRef = refMatch[1].trim();
-    } else {
-      const upiCrMatch = text.match(/UPI\/CR\/([a-zA-Z0-9\-_]+)/i);
-      if (upiCrMatch && upiCrMatch[1]) {
-        bankRef = upiCrMatch[1].trim();
+    const utrPatterns = [
+      /(?:upi\s*ref(?:erence)?\s*(?:no\.?|num)?|utr(?:\s*no\.?)?|rrn(?:\s*no\.?)?|trx\s*(?:id|ref|#)?|txn\s*(?:id|ref|#)?|transaction\s*id|ref\s*no\.?)[\s:=-]+([a-zA-Z0-9\-_]{6,35})/i,
+      /(?:upi\/(?:[0-9]+\/|cr\/)([a-zA-Z0-9\-_]{6,35}))/i,
+      /\b(?:ref(?:\s*(?:no\.?|id|#))?)[:\s#=-]+([a-zA-Z0-9\-_]{6,35})/i,
+      /\b([0-9]{12})\b/
+    ];
+
+    for (const pat of utrPatterns) {
+      const match = text.match(pat);
+      if (match && match[1]) {
+        bankRef = match[1].trim();
+        break;
       }
     }
 
-    // 3. Extract Sender VPA
+    // 3. Extract Sender VPA or Phone Number (including bKash, Nagad, Rocket, UPI & FamPay formats)
     let senderVpa;
-    let vpaMatch = text.match(/(?:from|by)\s+([a-zA-Z0-9.\-_]{2,100}@[a-zA-Z0-9.\-_]{2,64})/i);
+    let vpaMatch = text.match(/(?:from|by|vpa|upi\s*id|sender)[\s:]+(?:[a-zA-Z\s]+[\(\[])?([a-zA-Z0-9.\-_]{2,64}@[a-zA-Z0-9.\-_]{2,32}|01[3-9]\d{8}|\+?8801[3-9]\d{8}|\+?91[6-9]\d{9})/i);
     if (!vpaMatch) {
-      vpaMatch = text.match(/([a-zA-Z0-9.\-_]{2,100}@[a-zA-Z0-9.\-_]{2,64})/i);
+      vpaMatch = text.match(/([a-zA-Z0-9.\-_]{2,64}@[a-zA-Z0-9.\-_]{2,32})/i);
     }
     if (vpaMatch && vpaMatch[1]) {
       senderVpa = vpaMatch[1].trim().replace(/[.,;]+$/, '');

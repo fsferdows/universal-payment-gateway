@@ -77,6 +77,45 @@ describe('Google Messages / SMS Payment Observer Integration Tests', () => {
       assert.equal(parsed.senderVpa, 'buyer@okhdfcbank');
     });
 
+    test('correctly parses bKash credit SMS with amount, TrxID, and sender phone', () => {
+      const sms = {
+        text: 'You have received Tk 3,000.00 from 01711000111. Ref Order123. Fee Tk 0.00. Balance Tk 15,450.00. TrxID 9A8B7C6D5E at 01/11/2026 15:30',
+        sender: 'bKash'
+      };
+      const parsed = BankSmsParser.parse(sms);
+      assert.ok(parsed);
+      assert.equal(parsed.amountPaise, 300000n);
+      assert.equal(parsed.amount, '3000.00');
+      assert.equal(parsed.bankReferenceNumber, '9A8B7C6D5E');
+      assert.equal(parsed.senderVpa, '01711000111');
+    });
+
+    test('correctly parses Nagad credit SMS with amount, TxnID, and sender phone', () => {
+      const sms = {
+        text: 'Money Received. Amount: Tk 3,000.00. Sender: 01811000222. TxnID: 7K9M2L4P. Balance: Tk 8,500.00. 01/11/2026 15:30.',
+        sender: 'NAGAD'
+      };
+      const parsed = BankSmsParser.parse(sms);
+      assert.ok(parsed);
+      assert.equal(parsed.amountPaise, 300000n);
+      assert.equal(parsed.amount, '3000.00');
+      assert.equal(parsed.bankReferenceNumber, '7K9M2L4P');
+      assert.equal(parsed.senderVpa, '01811000222');
+    });
+
+    test('correctly parses Rocket credit SMS with amount, TxnId, and sender phone', () => {
+      const sms = {
+        text: 'Cash In Tk 3,000.00 from 01911000333 to 01700000000. Fee Tk 0.00. Balance Tk 12,000.00. TxnId: RKT893710 on 01-Nov-2026 15:30:00',
+        sender: '16216'
+      };
+      const parsed = BankSmsParser.parse(sms);
+      assert.ok(parsed);
+      assert.equal(parsed.amountPaise, 300000n);
+      assert.equal(parsed.amount, '3000.00');
+      assert.equal(parsed.bankReferenceNumber, 'RKT893710');
+      assert.equal(parsed.senderVpa, '01911000333');
+    });
+
     test('ignores debit SMS alerts', () => {
       const debitSms = {
         text: 'Your a/c 1234 debited by Rs 250.00 at Grocery Store.',
