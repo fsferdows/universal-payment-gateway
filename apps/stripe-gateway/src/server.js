@@ -1093,8 +1093,8 @@ export class StripeGatewayServer {
       }
 
       if (pathname === '/api/p2p/status' && method === 'GET') {
-        const orderId = parsedUrl.searchParams.get('order_id');
-        const trxId = (parsedUrl.searchParams.get('trx_id') || '').toUpperCase();
+        const orderId = url.searchParams.get('order_id');
+        const trxId = (url.searchParams.get('trx_id') || '').toUpperCase();
         const record = (trxId && this.paymentsLedger.get(trxId)) || (orderId && this.paymentsLedger.get(orderId));
         if (record) {
           return StripeGatewayServer.sendJson(res, 200, { found: true, payment: record });

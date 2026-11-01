@@ -797,6 +797,7 @@ YOUPI PG confirms payments without expensive commercial banking APIs using a tri
 
 | Service             |  Port  | Directory                                                | Entrypoint     | Responsibility                                                      |
 | :------------------ | :----: | :------------------------------------------------------- | :------------- | :------------------------------------------------------------------ |
+| **Universal Gateway** | `4242` | [`apps/stripe-gateway`](apps/stripe-gateway)             | `src/index.js` | Multi-method global gateway: Cards, PayPal, bKash, Nagad, Rocket, UPI & P2P Observer |
 | **Payment API**     | `6100` | [`apps/payment-api`](apps/payment-api)                   | `src/index.js` | Core REST API, state machine, DB transactions & SSE stream          |
 | **Checkout Portal** | `7000` | [`apps/checkout-portal`](apps/checkout-portal)           | `src/index.js` | Customer iframe checkout, dynamic vector QR, SDK bundle             |
 | **Merchant Admin**  | `6001` | [`apps/merchant-admin`](apps/merchant-admin)             | `src/index.js` | Operations panel, till billing desk, branding customizer            |
