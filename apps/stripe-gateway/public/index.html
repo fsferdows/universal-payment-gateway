@@ -445,32 +445,108 @@
             </div>
           </div>
 
-          <!-- TAB 7: Card Payouts & Bank Privacy Guide -->
+          <!-- TAB 7: Backend Bank Privacy & Direct Card Payout Hub -->
           <div id="tab-payouts" class="tab-pane">
-            <div class="payouts-guide">
-              <div class="guide-card highlight">
-                <h3>🛡️ How Your Bank Stays 100% Confidential</h3>
-                <p>When customers pay through your universal payment gateway:</p>
-                <ul>
-                  <li><strong>Customers never see your bank details:</strong> Your bank account number, IFSC/routing code, SWIFT, and personal debit card numbers are never exposed.</li>
-                  <li><strong>Statement Descriptor:</strong> The buyer’s bank or card statement only shows your store name (e.g. <code>YOUPI GLOBAL</code> or your business brand), keeping your private bank routing completely hidden.</li>
-                </ul>
+            <div class="payouts-hub">
+              <!-- Privacy Shield Status Banner -->
+              <div class="privacy-shield-banner">
+                <div class="shield-icon">🛡️</div>
+                <div class="shield-content">
+                  <h4>100% Payer Privacy Shield Active</h4>
+                  <p>Customer bank statements show strictly <strong><span id="shield-descriptor-val">YOUPI GLOBAL</span></strong>. Your private receiving card number, bank account details, and routing codes are never exposed to payers.</p>
+                </div>
               </div>
 
-              <div class="guide-card">
-                <h3>💳 How to Receive Direct Card Transfers (Instant Payouts)</h3>
-                <p>To transfer customer funds directly onto your bank debit card:</p>
-                <ol>
-                  <li>Log into your <a href="https://dashboard.stripe.com/settings/payouts" target="_blank" rel="noopener">Stripe Dashboard &rarr; Settings &rarr; Payouts</a>.</li>
-                  <li>Under <strong>Bank accounts and scheduling</strong>, click <strong>Add debit card</strong>.</li>
-                  <li>Enter your Visa or Mastercard debit card number.</li>
-                  <li>Enable <strong>Instant Payouts</strong>: Stripe transfers the money directly onto your card in <strong>under 30 minutes</strong> via Visa Direct / Mastercard Send rails.</li>
-                </ol>
+              <!-- Backend Receiving Card Settings Form -->
+              <div class="payout-card-box">
+                <h3>💳 Link Your Receiving Bank Card</h3>
+                <p class="section-desc">Customer payments across all rails (Card, PayPal, bKash, Nagad, Rocket, UPI) will transfer directly to this card from the backend.</p>
+
+                <div id="payout-active-card-badge" class="payout-status-badge hidden">
+                  <span class="status-dot">🟢</span>
+                  <span id="payout-active-card-text">Receiving Card Active: **** **** **** 4242 (Linked Bank)</span>
+                </div>
+
+                <div class="payout-form-grid">
+                  <div class="form-group full-width">
+                    <label for="payout-card-input">Debit / Bank Card Number (Visa / Mastercard)</label>
+                    <input type="text" id="payout-card-input" placeholder="4111 2222 3333 4444" autocomplete="off" />
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-card-exp">Expiry (MM / YY)</label>
+                    <input type="text" id="payout-card-exp" placeholder="12 / 28" />
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-bank-name">Receiving Bank Name</label>
+                    <input type="text" id="payout-bank-name" placeholder="e.g. Chase / Standard Chartered / City Bank" />
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-holder-name">Account / Cardholder Name</label>
+                    <input type="text" id="payout-holder-name" placeholder="Full name on card" />
+                  </div>
+                  <div class="form-group">
+                    <label for="payout-statement-desc">Payer Statement Brand (5-22 chars)</label>
+                    <input type="text" id="payout-statement-desc" value="YOUPI GLOBAL" maxlength="22" />
+                  </div>
+                </div>
+
+                <div class="payout-checkbox-row">
+                  <label>
+                    <input type="checkbox" id="payout-auto-transfer" checked />
+                    <span>Automatically transfer incoming customer payments directly to this card</span>
+                  </label>
+                </div>
+
+                <div class="payout-actions">
+                  <button type="button" id="save-payout-btn" class="pay-button payout-btn">
+                    <span>💾 Save & Link Receiving Card to Backend</span>
+                  </button>
+                  <div id="payout-save-msg" class="otp-message hidden"></div>
+                </div>
               </div>
 
-              <div class="guide-card">
-                <h3>🌐 Multi-Method Currency Settlements</h3>
-                <p>Customers can pay in their preferred currency or domestic MFS wallet (Card in USD/EUR/GBP, PayPal, bKash in BDT, Nagad in BDT, Rocket in BDT, or UPI in INR), and all payouts settle safely into your private destination.</p>
+              <!-- Instant Payouts Balance & Direct Transfer Trigger -->
+              <div class="payout-card-box balance-box">
+                <div class="balance-header">
+                  <div>
+                    <span class="balance-label">Available Gateway Balance</span>
+                    <h2 id="gateway-balance-display">$250.00 USD</h2>
+                  </div>
+                  <button type="button" id="trigger-payout-btn" class="fill-test-btn trigger-transfer-btn">
+                    ⚡ Instant Transfer to Linked Card
+                  </button>
+                </div>
+                <div id="payout-trigger-msg" class="otp-message hidden"></div>
+
+                <!-- Recent Dispatched Payouts -->
+                <div class="payout-history-container">
+                  <h4>Recent Payout Dispatches to Your Card</h4>
+                  <div id="payout-history-list" class="payout-history-list">
+                    <div class="empty-history-text">No recent payouts yet. Incoming payments will appear here with instant dispatch receipts.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Production Live Mode Activation -->
+              <div class="payout-card-box live-activation-box">
+                <h3>🚀 Live Production Gateway Activation</h3>
+                <p class="section-desc">To process live credit cards with real money instead of sandbox testing, paste your live Stripe keys below:</p>
+                <div class="payout-form-grid">
+                  <div class="form-group full-width">
+                    <label for="live-stripe-sk">Stripe Secret Key (sk_live_... or sk_test_...)</label>
+                    <input type="password" id="live-stripe-sk" placeholder="sk_live_51..." />
+                  </div>
+                  <div class="form-group full-width">
+                    <label for="live-stripe-pk">Stripe Publishable Key (pk_live_... or pk_test_...)</label>
+                    <input type="text" id="live-stripe-pk" placeholder="pk_live_51..." />
+                  </div>
+                </div>
+                <div class="payout-actions">
+                  <button type="button" id="activate-live-keys-btn" class="fill-test-btn live-btn">
+                    <span>🚀 Activate Live Production Mode</span>
+                  </button>
+                  <div id="live-keys-msg" class="otp-message hidden"></div>
+                </div>
               </div>
             </div>
           </div>

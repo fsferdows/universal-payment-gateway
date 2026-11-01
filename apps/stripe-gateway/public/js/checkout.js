@@ -856,6 +856,201 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ============================================
+  // 8. BACKEND PAYOUT RECEIVING CARD & SETTINGS
+  // ============================================
+  const payoutCardInput = document.getElementById('payout-card-input');
+  const payoutCardExp = document.getElementById('payout-card-exp');
+  const payoutBankName = document.getElementById('payout-bank-name');
+  const payoutHolderName = document.getElementById('payout-holder-name');
+  const payoutStatementDesc = document.getElementById('payout-statement-desc');
+  const payoutAutoTransfer = document.getElementById('payout-auto-transfer');
+  const savePayoutBtn = document.getElementById('save-payout-btn');
+  const payoutSaveMsg = document.getElementById('payout-save-msg');
+  const payoutActiveCardBadge = document.getElementById('payout-active-card-badge');
+  const payoutActiveCardText = document.getElementById('payout-active-card-text');
+  const shieldDescriptorVal = document.getElementById('shield-descriptor-val');
+  const triggerPayoutBtn = document.getElementById('trigger-payout-btn');
+  const payoutTriggerMsg = document.getElementById('payout-trigger-msg');
+  const gatewayBalanceDisplay = document.getElementById('gateway-balance-display');
+  const payoutHistoryList = document.getElementById('payout-history-list');
+
+  async function loadPayoutSettings() {
+    try {
+      const res = await fetch('/api/payout-settings');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.hasCardConfigured && payoutActiveCardBadge && payoutActiveCardText) {
+        payoutActiveCardBadge.classList.remove('hidden');
+        payoutActiveCardText.textContent = `Receiving Card Active: ${data.receivingCardMasked} (${data.receivingBank || 'Linked Bank'})`;
+      }
+      if (payoutBankName && data.receivingBank && data.receivingBank !== 'Not Configured') payoutBankName.value = data.receivingBank;
+      if (payoutHolderName && data.accountHolder && data.accountHolder !== 'Not Configured') payoutHolderName.value = data.accountHolder;
+      if (payoutCardExp && data.receivingCardExpiry) payoutCardExp.value = data.receivingCardExpiry;
+      if (payoutStatementDesc && data.statementDescriptor) payoutStatementDesc.value = data.statementDescriptor;
+      if (shieldDescriptorVal && data.statementDescriptor) shieldDescriptorVal.textContent = data.statementDescriptor;
+      if (payoutAutoTransfer && typeof data.autoTransfer === 'boolean') payoutAutoTransfer.checked = data.autoTransfer;
+
+      if (data.balance && gatewayBalanceDisplay) {
+        gatewayBalanceDisplay.textContent = `$${Number(data.balance.amount).toFixed(2)} ${data.balance.currency || 'USD'}`;
+      }
+    } catch (e) {
+      console.warn('Failed to load payout settings:', e);
+    }
+  }
+
+  async function loadPayoutHistory() {
+    try {
+      const res = await fetch('/api/payouts');
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (payoutHistoryList && Array.isArray(data.payouts) && data.payouts.length > 0) {
+        payoutHistoryList.innerHTML = data.payouts.map(p => `
+          <div class="payout-history-item">
+            <div class="payout-meta">
+              <span class="payout-dest">💳 ${p.receivingCard} (${p.receivingBank})</span>
+              <span class="payout-time">Ref: ${p.payoutId} • ${new Date(p.timestamp).toLocaleTimeString()}</span>
+            </div>
+            <div class="payout-val">+$${p.amount} ${p.currency} <span class="badge">DISPATCHED</span></div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      console.warn('Failed to load payout history:', e);
+    }
+  }
+
+  savePayoutBtn?.addEventListener('click', async () => {
+    const receivingCard = payoutCardInput?.value.trim();
+    const receivingCardExpiry = payoutCardExp?.value.trim();
+    const receivingBank = payoutBankName?.value.trim();
+    const accountHolder = payoutHolderName?.value.trim();
+    const statementDescriptor = payoutStatementDesc?.value.trim();
+    const autoTransfer = payoutAutoTransfer?.checked;
+
+    if (receivingCard && receivingCard.replace(/\D/g, '').length < 13) {
+      if (payoutSaveMsg) {
+        payoutSaveMsg.textContent = 'Please enter a valid debit/bank card number (13-19 digits).';
+        payoutSaveMsg.className = 'otp-message error';
+        payoutSaveMsg.classList.remove('hidden');
+      }
+      return;
+    }
+
+    try {
+      savePayoutBtn.disabled = true;
+      const res = await fetch('/api/payout-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receivingCard,
+          receivingCardExpiry,
+          receivingBank,
+          accountHolder,
+          statementDescriptor,
+          autoTransfer
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save payout settings');
+
+      if (payoutSaveMsg) {
+        payoutSaveMsg.textContent = '✅ Receiving card linked successfully! Payments will route directly to this card with statement privacy.';
+        payoutSaveMsg.className = 'otp-message success';
+        payoutSaveMsg.classList.remove('hidden');
+      }
+      if (payoutCardInput) payoutCardInput.value = '';
+      await loadPayoutSettings();
+    } catch (err) {
+      if (payoutSaveMsg) {
+        payoutSaveMsg.textContent = err.message;
+        payoutSaveMsg.className = 'otp-message error';
+        payoutSaveMsg.classList.remove('hidden');
+      }
+    } finally {
+      savePayoutBtn.disabled = false;
+    }
+  });
+
+  triggerPayoutBtn?.addEventListener('click', async () => {
+    try {
+      triggerPayoutBtn.disabled = true;
+      const res = await fetch('/api/payout-trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 250.00, currency: 'USD' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Transfer failed');
+
+      if (payoutTriggerMsg) {
+        payoutTriggerMsg.textContent = `⚡ Success! Dispatched to ${data.payout.receivingCard} (${data.payout.receivingBank}). Payer statement shows only "${data.payout.statementDescriptor}".`;
+        payoutTriggerMsg.className = 'otp-message success';
+        payoutTriggerMsg.classList.remove('hidden');
+      }
+      if (gatewayBalanceDisplay) gatewayBalanceDisplay.textContent = '$0.00 USD';
+      await loadPayoutHistory();
+    } catch (err) {
+      if (payoutTriggerMsg) {
+        payoutTriggerMsg.textContent = err.message;
+        payoutTriggerMsg.className = 'otp-message error';
+        payoutTriggerMsg.classList.remove('hidden');
+      }
+    } finally {
+      triggerPayoutBtn.disabled = false;
+    }
+  });
+
+  // Live Keys Activation
+  const activateLiveKeysBtn = document.getElementById('activate-live-keys-btn');
+  const liveStripeSk = document.getElementById('live-stripe-sk');
+  const liveStripePk = document.getElementById('live-stripe-pk');
+  const liveKeysMsg = document.getElementById('live-keys-msg');
+
+  activateLiveKeysBtn?.addEventListener('click', async () => {
+    const stripeSecretKey = liveStripeSk?.value.trim();
+    const stripePublishableKey = liveStripePk?.value.trim();
+
+    if (!stripeSecretKey || !stripePublishableKey) {
+      if (liveKeysMsg) {
+        liveKeysMsg.textContent = 'Please enter both Stripe Secret Key and Publishable Key.';
+        liveKeysMsg.className = 'otp-message error';
+        liveKeysMsg.classList.remove('hidden');
+      }
+      return;
+    }
+
+    try {
+      activateLiveKeysBtn.disabled = true;
+      const res = await fetch('/api/gateway-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stripeSecretKey, stripePublishableKey })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update credentials');
+
+      if (liveKeysMsg) {
+        liveKeysMsg.textContent = '🎉 Production credentials activated! Reloading portal in live mode...';
+        liveKeysMsg.className = 'otp-message success';
+        liveKeysMsg.classList.remove('hidden');
+      }
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      if (liveKeysMsg) {
+        liveKeysMsg.textContent = err.message;
+        liveKeysMsg.className = 'otp-message error';
+        liveKeysMsg.classList.remove('hidden');
+      }
+      activateLiveKeysBtn.disabled = false;
+    }
+  });
+
+  loadPayoutSettings();
+  loadPayoutHistory();
+
   // Initial UI updates
   updateCountryBadge();
   updateAmounts();

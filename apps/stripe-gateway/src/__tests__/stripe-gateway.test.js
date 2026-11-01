@@ -311,7 +311,86 @@ describe('Universal Payment Gateway Tests (Card, PayPal, bKash, Nagad, Rocket, U
   });
 
   // ============================================
-  // 9. Static Frontend Serving
+  // 9. Backend Payouts & Card Linking Tests
+  // ============================================
+  test('Backend Payout Settings: GET /api/payout-settings returns privacy shield and masked card', async () => {
+    const res = await makeRequest('GET', '/api/payout-settings');
+    assert.equal(res.status, 200);
+    assert.ok(res.body.privacyShield);
+    assert.equal(res.body.privacyShield.active, true);
+    assert.equal(res.body.statementDescriptor, 'MY BRAND');
+  });
+
+  test('Backend Payout Settings: POST /api/payout-settings links receiving card with statement privacy', async () => {
+    const postRes = await makeRequest('POST', '/api/payout-settings', {
+      receivingCard: '4111222233334444',
+      receivingCardExpiry: '12/28',
+      receivingBank: 'Standard Chartered',
+      accountHolder: 'Primary Merchant',
+      autoTransfer: true,
+      statementDescriptor: 'SECURE CHECKOUT'
+    });
+    assert.equal(postRes.status, 200);
+    assert.equal(postRes.body.success, true);
+    assert.equal(postRes.body.settings.receivingCardMasked, '**** **** **** 4444');
+    assert.equal(postRes.body.settings.receivingBank, 'Standard Chartered');
+    assert.equal(postRes.body.settings.statementDescriptor, 'SECURE CHECKOUT');
+
+    // Confirm GET returns masked card
+    const getRes = await makeRequest('GET', '/api/payout-settings');
+    assert.equal(getRes.status, 200);
+    assert.equal(getRes.body.hasCardConfigured, true);
+    assert.equal(getRes.body.receivingCardMasked, '**** **** **** 4444');
+  });
+
+  test('Backend Payout Trigger: POST /api/payout-trigger transfers funds directly to receiving card', async () => {
+    const triggerRes = await makeRequest('POST', '/api/payout-trigger', {
+      amount: 150.00,
+      currency: 'USD'
+    });
+    assert.equal(triggerRes.status, 200);
+    assert.equal(triggerRes.body.success, true);
+    assert.ok(triggerRes.body.payout.payoutId.startsWith('PO_'));
+    assert.equal(triggerRes.body.payout.receivingCard, '**** **** **** 4444');
+    assert.equal(triggerRes.body.payout.receivingBank, 'Standard Chartered');
+    assert.equal(triggerRes.body.payout.status, 'COMPLETED');
+
+    const historyRes = await makeRequest('GET', '/api/payouts');
+    assert.equal(historyRes.status, 200);
+    assert.ok(historyRes.body.payouts.length >= 1);
+  });
+
+  test('Card payment confirmation triggers auto-payout to receiving card', async () => {
+    const createRes = await makeRequest('POST', '/api/create-payment-intent', {
+      amount: 40.00,
+      currency: 'usd'
+    });
+    assert.equal(createRes.status, 200);
+
+    const confirmRes = await makeRequest('POST', '/api/confirm-simulated-payment', {
+      paymentIntentId: createRes.body.paymentIntentId,
+      cardNumber: '4242 4242 4242 4242'
+    });
+    assert.equal(confirmRes.status, 200);
+    assert.equal(confirmRes.body.status, 'succeeded');
+    assert.ok(confirmRes.body.autoPayout);
+    assert.equal(confirmRes.body.autoPayout.receivingCard, '**** **** **** 4444');
+    assert.equal(confirmRes.body.autoPayout.status, 'COMPLETED');
+  });
+
+  test('Live Gateway Credentials: POST /api/gateway-credentials updates credentials', async () => {
+    const res = await makeRequest('POST', '/api/gateway-credentials', {
+      stripePublishableKey: 'pk_test_updated_key',
+      statementDescriptor: 'YOUPI DIRECT'
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.publishableKey, 'pk_test_updated_key');
+    assert.equal(res.body.statementDescriptor, 'YOUPI DIRECT');
+  });
+
+  // ============================================
+  // 10. Static Frontend Serving
   // ============================================
   test('GET / serves HTML with Card, PayPal, bKash, Nagad, Rocket and UPI tabs', async () => {
     const res = await makeRequest('GET', '/');
