@@ -128,10 +128,13 @@ export class CoinWalletStoreServer {
         : path.resolve(__dirname, '../../../data/coin-wallet-fulfillment.sqlite'));
     this.openFulfillmentLedger();
 
+    this.merchantApiKey = options.apiKey || null;
+
     this.paymentClient = new YoupiPaymentClient({
       apiUrl: this.gatewayApiUrl,
       merchantId: this.merchantId,
-      webhookSecret: this.webhookSecret
+      webhookSecret: this.webhookSecret,
+      apiKey: this.merchantApiKey
     });
 
     // Starting balance plus durable reconciled grants. Observer matches do not add coins.
@@ -613,8 +616,9 @@ export class CoinWalletStoreServer {
               checkoutUrl: resolvedCheckoutUrl
             }));
           } catch (err) {
+            console.error('[coin-wallet-store] createPayment failed:', err?.message || err);
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Unable to create payment' }));
+            res.end(JSON.stringify({ error: 'Unable to create payment', details: err?.message || 'Internal error' }));
           }
         });
         return;
